@@ -1,7 +1,7 @@
 from django.db import models
 
 
-categories = [
+CATEGORIES = [
     {'dairy':'Dairy'},
     {'meat':'Meat'},
     {'fruits':'Fruits'},
@@ -41,33 +41,28 @@ class Product(models.Model):
     name = models.CharField(max_length=255)
     barcode = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True)
-    
-    # Relationships
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
-    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, related_name='products')
-    
-    # Pricing & Profitability
+    #relationships
+    category = models.CharField(max_length=50, choices=CATEGORIES)
+    supplier = models.ForeignKey('suppliers.Supplier', on_delete=models.SET_NULL, null=True, related_name='products')
+    # pricing & profitability
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
-    
-    # Inventory
+    #inventory
     initial_stock = models.PositiveIntegerField(default=0)
     current_stock = models.PositiveIntegerField(default=0)
-    minimum_stock_level = models.PositiveIntegerField(default=0)
-    
-    # Attributes & Status
+    minimum_stock_level = models.PositiveIntegerField(default=0) 
+    # attributes & status
     vat_applicable = models.BooleanField(default=False)
     is_perishable = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    
-    # Multi-Tenancy
+    #multi-tenancy
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
-        # Set initial_stock to current_stock only on creation
+       
         if not self.pk:
             self.current_stock = self.initial_stock
         super().save(*args, **kwargs)
