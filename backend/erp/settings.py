@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+#b$b=+!kx8fcf@6rselz3#@s=4k5qt(#q83sy#zh&=ijheeaq'
+SECRET_KEY = 'django-insecure-1jh*6%+1yy$42xg^zo*nv=xy84743+j&mr=2izm4260)8cw8^!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -31,6 +31,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "django_tenants",
+    'tenants',
+    'products',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,7 +42,38 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+SHARED_APPS = (
+    'django_tenants',
+    'tenants',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    # ... any other apps that should be public (e.g., a login/signup app)
+)
+
+TENANT_APPS = [
+#     # Your core ERP apps go here
+#     # 'your_app.invoicing',
+#     # 'your_app.inventory',
+#     # 'your_app.payroll',
+ 'tenant.payroll',
+]
+
+# INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+
+DATABASE_ROUTERS = (
+    'django_tenants.routers.TenantSyncRouter',
+)
+
+TENANT_MODEL = "tenants.Tenant"
+TENANT_DOMAIN_MODEL = "tenants.Domain"
+
 MIDDLEWARE = [
+    'django_tenants.middleware.TenantMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
