@@ -33,7 +33,6 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     "django_tenants",
     'tenants',
-    'products',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,11 +54,11 @@ SHARED_APPS = (
 )
 
 TENANT_APPS = [
-#     # Your core ERP apps go here
-#     # 'your_app.invoicing',
-#     # 'your_app.inventory',
-#     # 'your_app.payroll',
- 'tenant.payroll',
+    'products',
+    'customers',
+    'multi_location',
+    'suppliers',
+    'cash_management',
 ]
 
 # INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
