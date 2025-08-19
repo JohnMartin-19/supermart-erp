@@ -1,6 +1,6 @@
 from django.db import models
 
-# This app handles transactions with vendors
+#this app handles transactions with vendors
 
 class Bill(models.Model):
     bill_number = models.CharField(max_length=50, unique=True)
