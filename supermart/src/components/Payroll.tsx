@@ -188,7 +188,7 @@ export function Payroll() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{(payrollSummary.totalGrossSalary / 100000).toFixed(1)}L</div>
+            <div className="text-2xl font-bold">KSH{(payrollSummary.totalGrossSalary / 100000).toFixed(1)}L</div>
             <p className="text-xs text-muted-foreground">Monthly total</p>
           </CardContent>
         </Card>
@@ -199,7 +199,7 @@ export function Payroll() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{(payrollSummary.totalDeductions / 100000).toFixed(1)}L</div>
+            <div className="text-2xl font-bold">KSH{(payrollSummary.totalDeductions / 100000).toFixed(1)}L</div>
             <p className="text-xs text-muted-foreground">PF, ESI, TDS</p>
           </CardContent>
         </Card>
@@ -210,7 +210,7 @@ export function Payroll() {
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">₹{(payrollSummary.totalNetSalary / 100000).toFixed(1)}L</div>
+            <div className="text-2xl font-bold text-green-500">KSH{(payrollSummary.totalNetSalary / 100000).toFixed(1)}L</div>
             <p className="text-xs text-muted-foreground">After deductions</p>
           </CardContent>
         </Card>
@@ -272,12 +272,12 @@ export function Payroll() {
                       </TableCell>
                       <TableCell>{employee.designation}</TableCell>
                       <TableCell>{employee.department}</TableCell>
-                      <TableCell className="text-right">₹{employee.baseSalary.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₹{employee.grossSalary.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH{employee.baseSalary.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH{employee.grossSalary.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
-                        ₹{(employee.pf + employee.esi + employee.tds).toLocaleString()}
+                        KSH{(employee.pf + employee.esi + employee.tds).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-right">₹{employee.netSalary.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH{employee.netSalary.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
                           {employee.status}
@@ -306,20 +306,20 @@ export function Payroll() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Total Basic</span>
-                      <span>₹{(payrollSummary.totalGrossSalary * 0.6 / 100000).toFixed(1)}L</span>
+                      <span>KSH{(payrollSummary.totalGrossSalary * 0.6 / 100000).toFixed(1)}L</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Total HRA</span>
-                      <span>₹{(payrollSummary.totalGrossSalary * 0.3 / 100000).toFixed(1)}L</span>
+                      <span>KSH{(payrollSummary.totalGrossSalary * 0.3 / 100000).toFixed(1)}L</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Total Allowances</span>
-                      <span>₹{(payrollSummary.totalGrossSalary * 0.1 / 100000).toFixed(1)}L</span>
+                      <span>KSH{(payrollSummary.totalGrossSalary * 0.1 / 100000).toFixed(1)}L</span>
                     </div>
                     <div className="border-t pt-2 font-medium">
                       <div className="flex justify-between">
                         <span>Gross Total</span>
-                        <span>₹{(payrollSummary.totalGrossSalary / 100000).toFixed(1)}L</span>
+                        <span>KSH{(payrollSummary.totalGrossSalary / 100000).toFixed(1)}L</span>
                       </div>
                     </div>
                   </div>
@@ -330,20 +330,20 @@ export function Payroll() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>PF (Employee)</span>
-                      <span>₹{(payrollSummary.pfContribution / 2 / 1000).toFixed(0)}K</span>
+                      <span>KSH{(payrollSummary.pfContribution / 2 / 1000).toFixed(0)}K</span>
                     </div>
                     <div className="flex justify-between">
                       <span>ESI (Employee)</span>
-                      <span>₹{(payrollSummary.esiContribution / 2 / 1000).toFixed(0)}K</span>
+                      <span>KSH{(payrollSummary.esiContribution / 2 / 1000).toFixed(0)}K</span>
                     </div>
                     <div className="flex justify-between">
                       <span>TDS</span>
-                      <span>₹{(payrollSummary.tdsDeducted / 1000).toFixed(0)}K</span>
+                      <span>KSH{(payrollSummary.tdsDeducted / 1000).toFixed(0)}K</span>
                     </div>
                     <div className="border-t pt-2 font-medium">
                       <div className="flex justify-between">
                         <span>Total Deductions</span>
-                        <span>₹{(payrollSummary.totalDeductions / 100000).toFixed(1)}L</span>
+                        <span>KSH{(payrollSummary.totalDeductions / 100000).toFixed(1)}L</span>
                       </div>
                     </div>
                   </div>
@@ -354,20 +354,20 @@ export function Payroll() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>PF (Employer)</span>
-                      <span>₹{(payrollSummary.pfContribution / 2 / 1000).toFixed(0)}K</span>
+                      <span>KSH{(payrollSummary.pfContribution / 2 / 1000).toFixed(0)}K</span>
                     </div>
                     <div className="flex justify-between">
                       <span>ESI (Employer)</span>
-                      <span>₹{(payrollSummary.esiContribution / 2 / 1000).toFixed(0)}K</span>
+                      <span>KSH{(payrollSummary.esiContribution / 2 / 1000).toFixed(0)}K</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Professional Tax</span>
-                      <span>₹5.6K</span>
+                      <span>KSH5.6K</span>
                     </div>
                     <div className="border-t pt-2 font-medium">
                       <div className="flex justify-between">
                         <span>Total Contribution</span>
-                        <span>₹{((payrollSummary.pfContribution + payrollSummary.esiContribution) / 2 / 1000 + 5.6).toFixed(0)}K</span>
+                        <span>KSH{((payrollSummary.pfContribution + payrollSummary.esiContribution) / 2 / 1000 + 5.6).toFixed(0)}K</span>
                       </div>
                     </div>
                   </div>
@@ -380,7 +380,7 @@ export function Payroll() {
                   <p className="text-sm text-muted-foreground">Total amount to be transferred</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">₹{(payrollSummary.totalNetSalary / 100000).toFixed(1)}L</p>
+                  <p className="text-2xl font-bold">KSH{(payrollSummary.totalNetSalary / 100000).toFixed(1)}L</p>
                 </div>
               </div>
 
@@ -465,7 +465,7 @@ export function Payroll() {
                     <TableRow key={index}>
                       <TableCell className="font-medium">{record.month}</TableCell>
                       <TableCell>{record.employees}</TableCell>
-                      <TableCell className="text-right">₹{(record.totalPaid / 100000).toFixed(1)}L</TableCell>
+                      <TableCell className="text-right">KSH{(record.totalPaid / 100000).toFixed(1)}L</TableCell>
                       <TableCell>
                         <Badge variant={record.status === 'completed' ? 'default' : 'secondary'}>
                           {record.status}

@@ -229,7 +229,7 @@ export function Inventory() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹8,45,600</div>
+            <div className="text-2xl font-bold">KSH 8,45,600</div>
             <p className="text-xs text-muted-foreground">Current inventory value</p>
           </CardContent>
         </Card>
@@ -307,7 +307,7 @@ export function Inventory() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>₹{product.price.toLocaleString()}</TableCell>
+                      <TableCell>KSH{product.price.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={
                           product.status === 'in-stock' ? 'default' : 
@@ -354,7 +354,7 @@ export function Inventory() {
                       <TableCell>{order.customer}</TableCell>
                       <TableCell>{order.date}</TableCell>
                       <TableCell>{order.products} items</TableCell>
-                      <TableCell>₹{order.total.toLocaleString()}</TableCell>
+                      <TableCell>KSH{order.total.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={
                           order.status === 'delivered' ? 'default' : 

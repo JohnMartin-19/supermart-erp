@@ -90,21 +90,21 @@ export function QuickBilling() {
     {
       id: 'BILL-001',
       vendor: 'ABC Suppliers',
-      amount: '₹45,000',
+      amount: 'KSH45,000',
       date: '2025-01-25',
       status: 'pending',
     },
     {
       id: 'BILL-002',
       vendor: 'XYZ Materials',
-      amount: '₹32,500',
+      amount: 'KSH32,500',
       date: '2025-01-24',
       status: 'paid',
     },
     {
       id: 'BILL-003',
       vendor: 'PQR Services',
-      amount: '₹18,750',
+      amount: 'KSH18,750',
       date: '2025-01-23',
       status: 'overdue',
     },
@@ -290,7 +290,7 @@ export function QuickBilling() {
                           />
                         </div>
                         <div>
-                          <Label>Rate (₹)</Label>
+                          <Label>Rate (KSH)</Label>
                           <Input
                             type="number"
                             value={item.rate}
@@ -321,7 +321,7 @@ export function QuickBilling() {
                           </Select>
                         </div>
                         <div>
-                          <Label>Amount (₹)</Label>
+                          <Label>Amount (KSH)</Label>
                           <Input
                             value={item.amount.toFixed(2)}
                             disabled
@@ -343,16 +343,16 @@ export function QuickBilling() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>₹{subtotal.toFixed(2)}</span>
+                      <span>KSH{subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Total Tax:</span>
-                      <span>₹{totalTax.toFixed(2)}</span>
+                      <span>KSH{totalTax.toFixed(2)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between">
                       <span>Total Amount:</span>
-                      <span>₹{total.toFixed(2)}</span>
+                      <span>KSH{total.toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="mt-4 flex gap-2">
@@ -406,7 +406,7 @@ export function QuickBilling() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">12</div>
-                <p className="text-sm text-muted-foreground">Total: ₹2,45,000</p>
+                <p className="text-sm text-muted-foreground">Total: KSH2,45,000</p>
               </CardContent>
             </Card>
             <Card>
@@ -415,7 +415,7 @@ export function QuickBilling() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-red-600">3</div>
-                <p className="text-sm text-muted-foreground">Total: ₹45,000</p>
+                <p className="text-sm text-muted-foreground">Total: KSH45,000</p>
               </CardContent>
             </Card>
             <Card>
@@ -423,7 +423,7 @@ export function QuickBilling() {
                 <CardTitle>Paid This Month</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">₹8,90,000</div>
+                <div className="text-3xl font-bold text-green-600">KSH8,90,000</div>
                 <p className="text-sm text-muted-foreground">45 bills processed</p>
               </CardContent>
             </Card>

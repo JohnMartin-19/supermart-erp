@@ -154,9 +154,9 @@ export function QuickInvoice() {
                     <tr key={item.id} className="border-b">
                       <td className="py-2">{item.description}</td>
                       <td className="text-right py-2">{item.quantity}</td>
-                      <td className="text-right py-2">₹{item.rate.toFixed(2)}</td>
+                      <td className="text-right py-2">KSH{item.rate.toFixed(2)}</td>
                       <td className="text-right py-2">{item.taxRate}%</td>
-                      <td className="text-right py-2">₹{item.amount.toFixed(2)}</td>
+                      <td className="text-right py-2">KSH{item.amount.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -168,16 +168,16 @@ export function QuickInvoice() {
               <div className="w-64">
                 <div className="flex justify-between py-1">
                   <span>Subtotal:</span>
-                  <span>₹{subtotal.toFixed(2)}</span>
+                  <span>KSH{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span>Tax:</span>
-                  <span>₹{totalTax.toFixed(2)}</span>
+                  <span>KSH{totalTax.toFixed(2)}</span>
                 </div>
                 <Separator className="my-2" />
                 <div className="flex justify-between py-1">
                   <span>Total:</span>
-                  <span>₹{total.toFixed(2)}</span>
+                  <span>KSH{total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -350,7 +350,7 @@ export function QuickInvoice() {
                       />
                     </div>
                     <div>
-                      <Label>Rate (₹)</Label>
+                      <Label>Rate (KSH)</Label>
                       <Input
                         type="number"
                         value={item.rate}
@@ -381,7 +381,7 @@ export function QuickInvoice() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Amount (₹)</Label>
+                      <Label>Amount (KSH)</Label>
                       <Input
                         value={item.amount.toFixed(2)}
                         disabled
@@ -403,16 +403,16 @@ export function QuickInvoice() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>₹{subtotal.toFixed(2)}</span>
+                  <span>KSH{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Total Tax:</span>
-                  <span>₹{totalTax.toFixed(2)}</span>
+                  <span>KSH{totalTax.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between">
                   <span>Total Amount:</span>
-                  <span>₹{total.toFixed(2)}</span>
+                  <span>KSH{total.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

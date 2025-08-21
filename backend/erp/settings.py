@@ -62,9 +62,13 @@ TENANT_APPS = [
     
     #core apps
     'accounting',
+    'inventory',
+    'tax_compliance',
+    'payroll',
+    
 ]
 
-# INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 
 DATABASE_ROUTERS = (

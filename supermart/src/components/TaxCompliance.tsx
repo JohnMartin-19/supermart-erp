@@ -81,7 +81,7 @@ export function TaxCompliance() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{taxSummary.gstCollected.toLocaleString()}</div>
+            <div className="text-2xl font-bold">KSH{taxSummary.gstCollected.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Current month</p>
           </CardContent>
         </Card>
@@ -92,7 +92,7 @@ export function TaxCompliance() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{taxSummary.tdsDeducted.toLocaleString()}</div>
+            <div className="text-2xl font-bold">KSH{taxSummary.tdsDeducted.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Current quarter</p>
           </CardContent>
         </Card>
@@ -103,7 +103,7 @@ export function TaxCompliance() {
             <AlertCircle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">₹{taxSummary.totalTaxLiability.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-orange-500">KSH{taxSummary.totalTaxLiability.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Outstanding amount</p>
           </CardContent>
         </Card>
@@ -182,7 +182,7 @@ export function TaxCompliance() {
                       <TableCell>{return_.period}</TableCell>
                       <TableCell>{return_.type}</TableCell>
                       <TableCell>{return_.dueDate}</TableCell>
-                      <TableCell className="text-right">₹{return_.amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH{return_.amount.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={return_.status === 'filed' ? 'default' : 'secondary'}>
                           {return_.status}
@@ -230,7 +230,7 @@ export function TaxCompliance() {
                       <TableCell>{return_.period}</TableCell>
                       <TableCell>{return_.type}</TableCell>
                       <TableCell>{return_.dueDate}</TableCell>
-                      <TableCell className="text-right">₹{return_.amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH{return_.amount.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={return_.status === 'filed' ? 'default' : 'secondary'}>
                           {return_.status}
@@ -263,16 +263,16 @@ export function TaxCompliance() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>GST Collected</span>
-                  <span className="font-medium">₹{taxSummary.gstCollected.toLocaleString()}</span>
+                  <span className="font-medium">KSH{taxSummary.gstCollected.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>GST Paid</span>
-                  <span className="font-medium">₹{taxSummary.gstPaid.toLocaleString()}</span>
+                  <span className="font-medium">KSH{taxSummary.gstPaid.toLocaleString()}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-medium">
                     <span>Net GST Liability</span>
-                    <span>₹{taxSummary.gstBalance.toLocaleString()}</span>
+                    <span>KSH{taxSummary.gstBalance.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -292,16 +292,16 @@ export function TaxCompliance() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>TDS Deducted</span>
-                  <span className="font-medium">₹{taxSummary.tdsDeducted.toLocaleString()}</span>
+                  <span className="font-medium">KSH{taxSummary.tdsDeducted.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>TDS Deposited</span>
-                  <span className="font-medium">₹{taxSummary.tdsDeposited.toLocaleString()}</span>
+                  <span className="font-medium">KSH{taxSummary.tdsDeposited.toLocaleString()}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-medium">
                     <span>TDS Payable</span>
-                    <span>₹{taxSummary.tdsBalance.toLocaleString()}</span>
+                    <span>KSH{taxSummary.tdsBalance.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="space-y-2">

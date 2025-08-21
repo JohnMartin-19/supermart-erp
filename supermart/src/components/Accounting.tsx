@@ -157,10 +157,10 @@ export function Accounting() {
                       <TableCell>{entry.account}</TableCell>
                       <TableCell>{entry.description}</TableCell>
                       <TableCell className="text-right">
-                        {entry.debit > 0 ? `₹${entry.debit.toLocaleString()}` : '-'}
+                        {entry.debit > 0 ? `KSH {entry.debit.toLocaleString()}` : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        {entry.credit > 0 ? `₹${entry.credit.toLocaleString()}` : '-'}
+                        {entry.credit > 0 ? `KSH {entry.credit.toLocaleString()}` : '-'}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -199,9 +199,9 @@ export function Accounting() {
                       <TableCell>{invoice.id}</TableCell>
                       <TableCell>{invoice.client}</TableCell>
                       <TableCell>{invoice.date}</TableCell>
-                      <TableCell className="text-right">₹{invoice.amount.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₹{invoice.gst.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₹{invoice.total.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH {invoice.amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH {invoice.gst.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">KSH{invoice.total.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={
                           invoice.status === 'paid' ? 'default' : 
@@ -268,15 +268,15 @@ export function Accounting() {
                         <>
                           <div className="flex justify-between text-sm">
                             <span>Cash and Bank</span>
-                            <span>₹1,25,000</span>
+                            <span>KSH 1,25,000</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Accounts Receivable</span>
-                            <span>₹85,500</span>
+                            <span>KSH 85,500</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Inventory</span>
-                            <span>₹2,45,000</span>
+                            <span>KSH 2,45,000</span>
                           </div>
                         </>
                       )}
@@ -284,11 +284,11 @@ export function Accounting() {
                         <>
                           <div className="flex justify-between text-sm">
                             <span>Sales Revenue</span>
-                            <span>₹2,45,890</span>
+                            <span>KSH 2,45,890</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Service Revenue</span>
-                            <span>₹45,000</span>
+                            <span>KSH45,000</span>
                           </div>
                         </>
                       )}
@@ -296,11 +296,11 @@ export function Accounting() {
                         <>
                           <div className="flex justify-between text-sm">
                             <span>Office Expenses</span>
-                            <span>₹25,000</span>
+                            <span>KSH 25,000</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Salaries</span>
-                            <span>₹1,80,000</span>
+                            <span>KSH 1,80,000</span>
                           </div>
                         </>
                       )}
