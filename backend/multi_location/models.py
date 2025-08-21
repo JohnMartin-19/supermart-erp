@@ -1,5 +1,5 @@
 from django.db import models
-from django_tenants.utils import TenantMixin
+from django_tenants.models import TenantMixin
 
 
 BRANCH_COUNTIES = [

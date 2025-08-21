@@ -2,38 +2,37 @@ from django.db import models
 
 
 CATEGORIES = [
-    {'dairy':'Dairy'},
-    {'meat':'Meat'},
-    {'fruits':'Fruits'},
-    {'vegetables':'Vegetables'},
-    {'grains':'Grains'},
-    {'nuts':'Nuts'},
-    {'spices':'Spices'},
-    {'pasta':'Pasta'},
-    {'canned goods':'Canned Goods'},
-    {'baking supplies':'Baking Supplies'},
-    {'snacks':'Snacks'},
-    {'pet food':'Pet Food'},
-    {'household items':'Household Items'},
-    {'beverages':'Beverages'},
-    {'personal care':'Personal Care'},
-    {'baby care':'Baby Care'},
-    {'pet care':'Pet Care'},
-    {'office supplies':'Office Supplies'},
-    {'arts and crafts':'Arts and Crafts'},
-    {'books and media':'Books and Media'},
-    {'sports equipment':'Sports Equipment'},
-    {'musical instruments':'Musical Instruments'},
-    {'outdoor equipment':'Outdoor Equipment'},
-    {'tools':'Tools'},
-    {'furniture':'Furniture'},
-    {'home decor':'Home Decor'},
-    {'garden supplies':'Garden Supplies'},
-    {'garage and storage':'Garage and Storage'},
-    {'auto parts':'Auto Parts'},
-    {'vintage and collectibles':'Vintage and Collectibles'},
-    {'other':'Other'},
-    
+    ('dairy', 'Dairy'),
+    ('meat', 'Meat'),
+    ('fruits', 'Fruits'),
+    ('vegetables', 'Vegetables'),
+    ('grains', 'Grains'),
+    ('nuts', 'Nuts'),
+    ('spices', 'Spices'),
+    ('pasta', 'Pasta'),
+    ('canned_goods', 'Canned Goods'),
+    ('baking_supplies', 'Baking Supplies'),
+    ('snacks', 'Snacks'),
+    ('pet_food', 'Pet Food'),
+    ('household_items', 'Household Items'),
+    ('beverages', 'Beverages'),
+    ('personal_care', 'Personal Care'),
+    ('baby_care', 'Baby Care'),
+    ('pet_care', 'Pet Care'),
+    ('office_supplies', 'Office Supplies'),
+    ('arts_and_crafts', 'Arts and Crafts'),
+    ('books_and_media', 'Books and Media'),
+    ('sports_equipment', 'Sports Equipment'),
+    ('musical_instruments', 'Musical Instruments'),
+    ('outdoor_equipment', 'Outdoor Equipment'),
+    ('tools', 'Tools'),
+    ('furniture', 'Furniture'),
+    ('home_decor', 'Home Decor'),
+    ('garden_supplies', 'Garden Supplies'),
+    ('garage_and_storage', 'Garage and Storage'),
+    ('auto_parts', 'Auto Parts'),
+    ('vintage_and_collectibles', 'Vintage and Collectibles'),
+    ('other', 'Other'),
 ]
 
 # Create your models here.
@@ -43,7 +42,7 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     #relationships
     category = models.CharField(max_length=50, choices=CATEGORIES)
-    supplier = models.ForeignKey('suppliers.Supplier', on_delete=models.SET_NULL, null=True, related_name='products')
+    supplier = models.ForeignKey('suppliers.Supplier', on_delete=models.SET_NULL, null=True, related_name='supplier_products')
     # pricing & profitability
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -56,7 +55,7 @@ class Product(models.Model):
     is_perishable = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     #multi-tenancy
-    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE,related_name='product_catalog_items')
 
     def __str__(self):
         return self.name

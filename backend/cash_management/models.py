@@ -21,7 +21,7 @@ class CashDrawer(models.Model):
     
     
 class CashExpense(models.Model):
-    branch = models.ForeignKey('locations.Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('multi_location.Branch', on_delete=models.CASCADE)
     cash_drawer = models.ForeignKey(CashDrawer, on_delete=models.SET_NULL, null=True, related_name='expenses')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()

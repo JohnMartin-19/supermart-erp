@@ -21,7 +21,7 @@ class Customer(models.Model):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20)
     address = models.CharField(max_length=100)
-    membership_tier = models.ForeignKey(MembershipTier,on_delete=models.SET_NULL)
+    membership_tier = models.ForeignKey(MembershipTier,on_delete=models.SET_NULL,null=True)
     member_since = models.DateField(auto_now_add=True)
     last_visit = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now=True)
