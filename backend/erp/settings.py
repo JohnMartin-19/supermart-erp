@@ -59,6 +59,9 @@ TENANT_APPS = [
     'multi_location',
     'suppliers',
     'cash_management',
+    
+    #core apps
+    'accounting',
 ]
 
 # INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
