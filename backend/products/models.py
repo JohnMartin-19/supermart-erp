@@ -70,4 +70,4 @@ class Product(models.Model):
     def margin(self):
         if self.cost_price > 0:
             return ((self.selling_price - self.cost_price) / self.cost_price) * 100
-        return 0
+        return 0 

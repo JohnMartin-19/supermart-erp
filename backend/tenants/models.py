@@ -13,7 +13,7 @@ class Tenant(TenantMixin):
     on_trial = models.BooleanField(default=True)
     
     max_users = models.IntegerField(default=5)
-    subscriptionPlan = models.ForeignKey('SubscriptionPlan', on_delete=models.SET_NULL,null=True)
+    # subscriptionPlan = models.ForeignKey('SubscriptionPlan', on_delete=models.SET_NULL,null=True,blank=True)
     
     transaction_count = models.IntegerField(default=0)
     
