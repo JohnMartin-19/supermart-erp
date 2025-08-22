@@ -29,7 +29,7 @@ class SupplierListCreateAPIView(APIView):
     
     
     
-class RetrieveUpdateDestroyAPIView(APIView):
+class SupplierRetrieveUpdateDestroyAPIView(APIView):
     
     """
     helper method to get an instane of an obj
