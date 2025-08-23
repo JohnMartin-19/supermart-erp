@@ -91,6 +91,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'erp.urls'
+ROOT_URLCONF_TENANT = 'erp.tenants_urls'
 
 TEMPLATES = [
     {
