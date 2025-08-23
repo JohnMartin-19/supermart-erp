@@ -7,5 +7,5 @@ urlpatterns = [
     path('cash_expense/', CashExpenseListCreateAPIView.as_view(),name = 'cash_expense' ),
     path('cash_expense/<int:pk>', CashExpenseRetrieveUpdateDestroyAPIView.as_view(), name = 'cash_expense_instance'),
     path('cash_reconciliation/', CashReconciliationListCreateAPIView.as_view(), name = 'cash_reconciliation'),
-    path('cash_reconciliation/<itn:pk>', CashReconciliationRetrieveUpdateDestroyAPIView.as_view(),name = 'cash_recon_instance'),
+    path('cash_reconciliation/<int:pk>', CashReconciliationRetrieveUpdateDestroyAPIView.as_view(),name = 'cash_recon_instance'),
 ]

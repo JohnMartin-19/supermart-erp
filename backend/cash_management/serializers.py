@@ -15,7 +15,7 @@ class CashReconciliationSerializer(serializers.ModelSerializer):
         fields = ['id','cash_drawer','actual_cash_count','notes','recorded_at','tenant']
         read_only_fields = ['tenant','recorded_at']
         
-class CashExpenseSerializer(serializers.ModelSerializers):
+class CashExpenseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CashExpense
