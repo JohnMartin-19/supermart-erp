@@ -95,10 +95,10 @@ class StockTransferListCreateAPIView(APIView):
 class StockTransferRetrieveUpdateDestroyAPIView(APIView):
     
     """
-    helper method to get a sing stock transfer instance by its ID
+    helper method to get a single stock transfer instance by its ID
     """
     
-    def get_object(self, request, pk):
+    def get_object(self, pk):
         return get_object_or_404(StockTransfer,pk=pk)
     
     """
