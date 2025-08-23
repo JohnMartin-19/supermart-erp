@@ -16,7 +16,7 @@ class BranchListCreateAPIView(APIView):
     
     def get(self,request):
         branches = Branch.objects.all()
-        serializer = BranchSerializer(branches)
+        serializer = BranchSerializer(branches,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     """

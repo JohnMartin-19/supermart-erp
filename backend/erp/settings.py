@@ -51,10 +51,13 @@ SHARED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # ... any other apps that should be public (e.g., a login/signup app)
+    'rest_framework',
 )
 
 TENANT_APPS = [
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.admin',
     'products',
     'customers',
     'multi_location',

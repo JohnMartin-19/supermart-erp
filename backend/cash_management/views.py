@@ -15,7 +15,7 @@ class CashDrawerListCreateAPIView(APIView):
     
     def get(self,request):
         cash_drawers = CashDrawer.objects.all()
-        serializer = CashDrawerSerializer(cash_drawers)
+        serializer = CashDrawerSerializer(cash_drawers,many=True)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
@@ -27,7 +27,7 @@ class CashDrawerListCreateAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status = status.HTTP_201_CREATED)
-        return Response(serializer.error, status = status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     
 class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
@@ -56,7 +56,7 @@ class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.error, status = status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     """
     DELETE METHOD: To delete a cash drawer instance from our schema

@@ -13,7 +13,7 @@ class CustomerListCreateAPIView(APIView):
     
     def get(self, request):
         customers = Customer.objects.all()
-        serializer = CustomerSerializer(customers)
+        serializer = CustomerSerializer(customers,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     

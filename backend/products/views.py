@@ -12,7 +12,7 @@ class ProductListCreateAPIView(APIView):
     """
     def get(self, request):
         products = Product.objects.all()
-        serializer = ProductSerializer(products)
+        serializer = ProductSerializer(products,many=True)
         return Response(serializer.data)
     
     """
@@ -23,7 +23,7 @@ class ProductListCreateAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.error)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ProductRetrieveUpdateDestroyAPIView(APIView):
     
