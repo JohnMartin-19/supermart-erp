@@ -12,6 +12,7 @@ import { Switch } from './ui/switch';
 import { Package, Plus, Search, Filter, Edit, Trash2, AlertTriangle, TrendingUp, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
+
 interface Product {
   id: string;
   name: string;
@@ -19,13 +20,13 @@ interface Product {
   category: string;
   selling_price: number;
   cost_price: number;
-  stock_level: number;
+  current_stock: number;
   minimum_stock_level: number;
   supplier: string;
   description: string;
   is_active: boolean;
   vat_applicable: boolean;
-  perishable: boolean;
+  is_perishable: boolean;
   expiry_date?: string;
   unit: string;
 }
@@ -37,23 +38,34 @@ export function ProductCatalog() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    barcode: '',
+    category: '',
+    selling_price: 0,
+    cost_price: 0,
+    initial_stock: 0,
+    current_stock: 0,
+    minimum_stock_level: 0,
+    supplier: '',
+    description: '',
+    is_active: true,
+    vat_applicable: false,
+    is_perishable: false,
+    expiry_date: '',
+    unit: 'piece'
+  });
+  const [isAdding, setIsAdding] = useState(false);
+  const [addProductError, setAddProductError] = useState<string | null>(null);
 
-  // Fetch products from the API
+  // Fetching products from the API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const token = localStorage.getItem('access_token');
-        console.log("Token:",token)
-        if (!token) {
-          setError('Authentication token not found. Please log in again.');
-          setIsLoading(false);
-          return;
-        }
-
         const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           },
         });
 
@@ -63,11 +75,9 @@ export function ProductCatalog() {
         }
 
         const data = await response.json();
-        console.log("DATA:",data)
         setProducts(data);
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
-        console.error("Failed to fetch products:", err);
       } finally {
         setIsLoading(false);
       }
@@ -76,23 +86,123 @@ export function ProductCatalog() {
     fetchProducts();
   }, []);
 
-  const categories = ['all', 'Bakery', 'Dairy', 'Grains', 'Pantry', 'Beverages', 'Snacks', 'Household'];
+  const categories = ['all', 'dairy', 'meat', 'fruits', 'vegetables', 'grains', 'nuts', 'spices',
+     'pasta', 'canned goods', 'baking supplies', 'snacks', 'pet food', 'household items',
+     'beverages', 'personal care', 'baby care', 'pet care', 'office supplies', 'arts and crafts',
+     'books and media', 'sports equipment', 'musical instruments', 'outdoor equipment', 'tools',
+     'furniture', 'home decor', 'garden supplies', 'garage and storage', 'auto parts',
+     'vintage and collectibles', 'other'];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.barcode.includes(searchQuery) ||
-                         product.supplier.toLowerCase().includes(searchQuery.toLowerCase());
+                          (product.barcode && product.barcode.includes(searchQuery)) ||
+                          (product.supplier && product.supplier.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const lowStockProducts = products.filter(product => product.stock_level <= product.minimum_stock_level);
-  const perishableProducts = products.filter(product => product.perishable);
+  const lowStockProducts = products.filter(product => product.current_stock <= product.minimum_stock_level);
+  const perishableProducts = products.filter(product => product.is_perishable);
 
-  const addProduct = () => {
-    // This function will be updated to make a POST request to add a new product
-    console.log('Adding new product...');
-    setIsAddProductOpen(false);
+  // Handle input changes for the "Add Product" form
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    
+    // Check if the input is for a numeric field and handle empty strings
+    if (['minimum_stock_level', 'cost_price', 'selling_price'].includes(id)) {
+      const numericValue = value === '' ? 0 : Number(value);
+      setNewProduct(prev => ({
+        ...prev,
+        [id]: numericValue
+      }));
+    } else {
+      setNewProduct(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
+  };
+
+  // Dedicated handler for stock fields to handle numeric values
+  const handleStockInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    const numericValue = value === '' ? 0 : Number(value);
+    setNewProduct(prev => ({
+      ...prev,
+      [id]: numericValue,
+      // Automatically set current_stock to initial_stock value
+      ...(id === 'initial_stock' && { current_stock: numericValue })
+    }));
+  };
+
+  const handleSwitchChange = (id: string, checked: boolean) => {
+    setNewProduct(prev => ({
+      ...prev,
+      [id]: checked
+    }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setNewProduct(prev => ({
+      ...prev,
+      category: value
+    }));
+  };
+
+  const addProduct = async () => {
+    setIsAdding(true);
+    setAddProductError(null);
+
+    const productPayload = {
+      ...newProduct,
+      selling_price: parseFloat(String(newProduct.selling_price)),
+      cost_price: parseFloat(String(newProduct.cost_price)),
+      initial_stock: parseInt(String(newProduct.initial_stock)),
+      current_stock: parseInt(String(newProduct.current_stock)),
+      minimum_stock_level: parseInt(String(newProduct.minimum_stock_level)),
+    };
+
+    try {
+      const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(productPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to add product.');
+      }
+
+      const addedProduct = await response.json();
+      setProducts(prevProducts => [...prevProducts, addedProduct]);
+      setIsAddProductOpen(false); // Close the dialog
+      setNewProduct({ // Reset the form
+        name: '',
+        barcode: '',
+        category: '',
+        selling_price: 0,
+        cost_price: 0,
+        initial_stock: 0,
+        current_stock: 0,
+        minimum_stock_level: 0,
+        supplier: '',
+        description: '',
+        is_active: true,
+        vat_applicable: false,
+        is_perishable: false,
+        expiry_date: '',
+        unit: 'piece'
+      });
+    } catch (err: any) {
+      console.error("Failed to add product:", err);
+      setAddProductError(err.message);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   if (isLoading) {
@@ -137,17 +247,24 @@ export function ProductCatalog() {
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              {addProductError && (
+                <Alert variant="destructive" className="col-span-full mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Failed to add product</AlertTitle>
+                  <AlertDescription>{addProductError}</AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="name">Product Name</Label>
-                <Input id="name" placeholder="Enter product name" />
+                <Input id="name" placeholder="Enter product name" value={newProduct.name} onChange={handleInputChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="barcode">Barcode</Label>
-                <Input id="barcode" placeholder="Scan or enter barcode" />
+                <Input id="barcode" placeholder="Scan or enter barcode" value={newProduct.barcode} onChange={handleInputChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select>
+                <Select value={newProduct.category} onValueChange={handleSelectChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -160,40 +277,43 @@ export function ProductCatalog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="supplier">Supplier</Label>
-                <Input id="supplier" placeholder="Enter supplier name" />
+                <Input id="supplier" placeholder="Enter supplier name" value={newProduct.supplier} onChange={handleInputChange} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="costPrice">Cost Price (KES)</Label>
-                <Input id="costPrice" type="number" placeholder="0.00" />
+                <Label htmlFor="cost_price">Cost Price (KES)</Label>
+                <Input id="cost_price" type="number" placeholder="0.00" value={newProduct.cost_price} onChange={handleInputChange} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sellingPrice">Selling Price (KES)</Label>
-                <Input id="sellingPrice" type="number" placeholder="0.00" />
+                <Label htmlFor="selling_price">Selling Price (KES)</Label>
+                <Input id="selling_price" type="number" placeholder="0.00" value={newProduct.selling_price} onChange={handleInputChange} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="stockLevel">Initial Stock</Label>
-                <Input id="stockLevel" type="number" placeholder="0" />
+                <Label htmlFor="initial_stock">Initial Stock</Label>
+                <Input id="initial_stock" type="number" placeholder="0" value={newProduct.initial_stock} onChange={handleStockInputChange} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="minStock">Minimum Stock Level</Label>
-                <Input id="minStock" type="number" placeholder="0" />
+                <Label htmlFor="minimum_stock_level">Minimum Stock Level</Label>
+                <Input id="minimum_stock_level" type="number" placeholder="0" value={newProduct.minimum_stock_level} onChange={handleInputChange} />
               </div>
               <div className="col-span-full space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" placeholder="Product description" />
+                <Textarea id="description" placeholder="Product description" value={newProduct.description} onChange={handleInputChange} />
               </div>
               <div className="flex items-center space-x-2">
-                <Switch id="vat" />
-                <Label htmlFor="vat">VAT Applicable</Label>
+                <Switch id="vat_applicable" checked={newProduct.vat_applicable} onCheckedChange={(checked) => handleSwitchChange('vat_applicable', checked)} />
+                <Label htmlFor="vat_applicable">VAT Applicable</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Switch id="perishable" />
-                <Label htmlFor="perishable">Perishable Item</Label>
+                <Switch id="is_perishable" checked={newProduct.is_perishable} onCheckedChange={(checked) => handleSwitchChange('is_perishable', checked)} />
+                <Label htmlFor="is_perishable">Perishable Item</Label>
               </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsAddProductOpen(false)}>Cancel</Button>
-              <Button onClick={addProduct}>Add Product</Button>
+              <Button onClick={addProduct} disabled={isAdding}>
+                {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isAdding ? 'Adding...' : 'Add Product'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -273,11 +393,11 @@ export function ProductCatalog() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Stock Level:</span>
-                      <Badge variant={product.stock_level <= product.minimum_stock_level ? "destructive" : "secondary"}>
-                        {product.stock_level} {product.unit}
+                      <Badge variant={product.current_stock <= product.minimum_stock_level ? "destructive" : "secondary"}>
+                        {product.current_stock} {product.unit}
                       </Badge>
                     </div>
-                    {product.stock_level <= product.minimum_stock_level && (
+                    {product.current_stock <= product.minimum_stock_level && (
                       <div className="flex items-center gap-1 text-xs text-destructive">
                         <AlertTriangle className="h-3 w-3" />
                         Low Stock Alert
@@ -289,7 +409,7 @@ export function ProductCatalog() {
                     {product.vat_applicable && (
                       <Badge variant="outline">VAT</Badge>
                     )}
-                    {product.perishable && (
+                    {product.is_perishable && (
                       <Badge variant="outline">Perishable</Badge>
                     )}
                   </div>
@@ -317,7 +437,7 @@ export function ProductCatalog() {
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium">{product.name}</h4>
                     <Badge variant="destructive">
-                      {product.stock_level} / {product.minimum_stock_level}
+                      {product.current_stock} / {product.minimum_stock_level}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{product.category}</p>
@@ -345,7 +465,7 @@ export function ProductCatalog() {
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium">{product.name}</h4>
-                    <Badge variant="outline">{product.stock_level} {product.unit}</Badge>
+                    <Badge variant="outline">{product.current_stock} {product.unit}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{product.category}</p>
                   {product.expiry_date && (

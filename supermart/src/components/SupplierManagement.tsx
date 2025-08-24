@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,23 +8,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Truck, Plus, Search, Phone, MapPin, Package, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Truck, Plus, Search, Phone, MapPin, Package, Calendar, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface Supplier {
   id: string;
   name: string;
-  contactPerson: string;
-  phone: string;
+  contact_person: string;
+  phone_number: string;
   email?: string;
   address: string;
   city: string;
   category: string;
   status: 'active' | 'inactive' | 'pending';
-  paymentTerms: string;
-  creditLimit: number;
-  currentBalance: number;
-  lastDelivery: string;
-  totalOrders: number;
+  payment_terms: string;
+  credit_limit: number;
+  current_balance: number;
+  last_delivery: string;
+  total_orders: number;
   rating: number;
   products: string[];
 }
@@ -32,11 +33,11 @@ interface Supplier {
 interface PurchaseOrder {
   id: string;
   supplier: string;
-  orderDate: string;
-  deliveryDate: string;
+  order_date: string;
+  delivery_date: string;
   status: 'pending' | 'approved' | 'delivered' | 'cancelled';
-  totalAmount: number;
-  items: { product: string; quantity: number; unitPrice: number }[];
+  total_amount: number;
+  items: { product: string; quantity: number; unit_price: number }[];
 }
 
 export function SupplierManagement() {
@@ -45,127 +46,82 @@ export function SupplierManagement() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false);
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
-
-  // Mock data - would come from Django API
-  const [suppliers] = useState<Supplier[]>([
-    {
-      id: '1',
-      name: 'Fresh Produce Supplies Ltd',
-      contactPerson: 'John Mwangi',
-      phone: '+254 722 111 222',
-      email: 'john@freshproduce.co.ke',
-      address: 'Wakulima Market, CBD',
-      city: 'Nairobi',
-      category: 'Fresh Produce',
-      status: 'active',
-      paymentTerms: '30 days',
-      creditLimit: 500000,
-      currentBalance: 125000,
-      lastDelivery: '2024-08-17',
-      totalOrders: 45,
-      rating: 4.8,
-      products: ['Tomatoes', 'Onions', 'Potatoes', 'Carrots']
-    },
-    {
-      id: '2',
-      name: 'Dairy Coop Kenya',
-      contactPerson: 'Sarah Wanjiku',
-      phone: '+254 733 222 333',
-      email: 'procurement@dairycoop.co.ke',
-      address: 'Industrial Area',
-      city: 'Nairobi',
-      category: 'Dairy Products',
-      status: 'active',
-      paymentTerms: '14 days',
-      creditLimit: 300000,
-      currentBalance: 85000,
-      lastDelivery: '2024-08-16',
-      totalOrders: 62,
-      rating: 4.9,
-      products: ['Milk', 'Yogurt', 'Cheese', 'Butter']
-    },
-    {
-      id: '3',
-      name: 'Grain Distributors East Africa',
-      contactPerson: 'Peter Kimani',
-      phone: '+254 700 333 444',
-      address: 'Mombasa Road',
-      city: 'Nairobi',
-      category: 'Grains & Cereals',
-      status: 'active',
-      paymentTerms: '21 days',
-      creditLimit: 800000,
-      currentBalance: 245000,
-      lastDelivery: '2024-08-15',
-      totalOrders: 38,
-      rating: 4.6,
-      products: ['Rice', 'Wheat Flour', 'Maize', 'Beans']
-    },
-    {
-      id: '4',
-      name: 'Household Items Wholesale',
-      contactPerson: 'Mary Njeri',
-      phone: '+254 711 444 555',
-      email: 'orders@householditems.co.ke',
-      address: 'Eastleigh',
-      city: 'Nairobi',
-      category: 'Household Items',
-      status: 'pending',
-      paymentTerms: '30 days',
-      creditLimit: 200000,
-      currentBalance: 0,
-      lastDelivery: '',
-      totalOrders: 0,
-      rating: 0,
-      products: ['Detergents', 'Soaps', 'Cleaning Supplies']
-    }
-  ]);
+  
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [purchaseOrders] = useState<PurchaseOrder[]>([
     {
       id: 'PO-001',
       supplier: 'Fresh Produce Supplies Ltd',
-      orderDate: '2024-08-17',
-      deliveryDate: '2024-08-18',
+      order_date: '2024-08-17',
+      delivery_date: '2024-08-18',
       status: 'approved',
-      totalAmount: 85000,
+      total_amount: 85000,
       items: [
-        { product: 'Tomatoes', quantity: 50, unitPrice: 800 },
-        { product: 'Onions', quantity: 30, unitPrice: 1500 }
+        { product: 'Tomatoes', quantity: 50, unit_price: 800 },
+        { product: 'Onions', quantity: 30, unit_price: 1500 }
       ]
     },
     {
       id: 'PO-002',
       supplier: 'Dairy Coop Kenya',
-      orderDate: '2024-08-16',
-      deliveryDate: '2024-08-17',
+      order_date: '2024-08-16',
+      delivery_date: '2024-08-17',
       status: 'delivered',
-      totalAmount: 125000,
+      total_amount: 125000,
       items: [
-        { product: 'Milk 1L', quantity: 100, unitPrice: 55 },
-        { product: 'Yogurt', quantity: 50, unitPrice: 120 }
+        { product: 'Milk 1L', quantity: 100, unit_price: 55 },
+        { product: 'Yogurt', quantity: 50, unit_price: 120 }
       ]
     },
     {
       id: 'PO-003',
       supplier: 'Grain Distributors East Africa',
-      orderDate: '2024-08-15',
-      deliveryDate: '2024-08-19',
+      order_date: '2024-08-15',
+      delivery_date: '2024-08-19',
       status: 'pending',
-      totalAmount: 180000,
+      total_amount: 180000,
       items: [
-        { product: 'Rice 2kg', quantity: 100, unitPrice: 140 },
-        { product: 'Wheat Flour 1kg', quantity: 200, unitPrice: 80 }
+        { product: 'Rice 2kg', quantity: 100, unit_price: 140 },
+        { product: 'Wheat Flour 1kg', quantity: 200, unit_price: 80 }
       ]
     }
   ]);
 
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch suppliers.');
+        }
+
+        const data = await response.json();
+        setSuppliers(data);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSuppliers();
+  }, []);
+
   const categories = ['all', 'Fresh Produce', 'Dairy Products', 'Grains & Cereals', 'Beverages', 'Household Items'];
 
   const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.phone.includes(searchQuery);
+    const matchesSearch = supplier.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         supplier.contact_person?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         supplier.phone_number?.includes(searchQuery);
     const matchesCategory = selectedCategory === 'all' || supplier.category === selectedCategory;
     const matchesStatus = selectedStatus === 'all' || supplier.status === selectedStatus;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -191,13 +147,40 @@ export function SupplierManagement() {
   };
 
   const getRatingStars = (rating: number) => {
+    // Ensure rating is a valid number before using it
+    if (typeof rating !== 'number' || isNaN(rating)) {
+        return '';
+    }
     return '⭐'.repeat(Math.floor(rating)) + (rating % 1 >= 0.5 ? '⭐' : '');
   };
 
   const totalSuppliers = suppliers.length;
   const activeSuppliers = suppliers.filter(s => s.status === 'active').length;
-  const totalOutstanding = suppliers.reduce((sum, s) => sum + s.currentBalance, 0);
+  const totalOutstanding = suppliers.reduce((sum, s) => sum + (s.current_balance || 0), 0);
   const pendingOrders = purchaseOrders.filter(po => po.status === 'pending').length;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading suppliers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -434,11 +417,11 @@ export function SupplierManagement() {
                       <CardTitle className="text-lg">{supplier.name}</CardTitle>
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                         <MapPin className="h-3 w-3" />
-                        {supplier.address}, {supplier.city}
+                        {supplier.address ? `${supplier.address}, ${supplier.city}` : 'N/A'}
                       </p>
                     </div>
                     <Badge variant={getStatusColor(supplier.status)}>
-                      {supplier.status.charAt(0).toUpperCase() + supplier.status.slice(1)}
+                      {supplier.status?.charAt(0).toUpperCase() + supplier.status?.slice(1)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -446,18 +429,18 @@ export function SupplierManagement() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Contact Person</p>
-                      <p className="font-medium">{supplier.contactPerson}</p>
+                      <p className="font-medium">{supplier.contact_person || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Category</p>
-                      <p className="font-medium">{supplier.category}</p>
+                      <p className="font-medium">{supplier.category || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Phone className="h-3 w-3" />
                         Phone
                       </p>
-                      <p className="font-medium">{supplier.phone}</p>
+                      <p className="font-medium">{supplier.phone_number || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Rating</p>
@@ -470,22 +453,22 @@ export function SupplierManagement() {
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                     <div>
                       <p className="text-sm text-muted-foreground">Payment Terms</p>
-                      <p className="font-medium">{supplier.paymentTerms}</p>
+                      <p className="font-medium">{supplier.payment_terms || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Orders</p>
-                      <p className="font-medium">{supplier.totalOrders}</p>
+                      <p className="font-medium">{supplier.total_orders || 0}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Current Balance</p>
-                      <p className={`font-medium ${supplier.currentBalance > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                        KES {supplier.currentBalance.toLocaleString()}
+                      <p className={`font-medium ${supplier.current_balance > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                        KES {(supplier.current_balance || 0).toLocaleString()}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Last Delivery</p>
                       <p className="font-medium">
-                        {supplier.lastDelivery ? new Date(supplier.lastDelivery).toLocaleDateString() : 'Never'}
+                        {supplier.last_delivery ? new Date(supplier.last_delivery).toLocaleDateString() : 'Never'}
                       </p>
                     </div>
                   </div>
@@ -493,12 +476,12 @@ export function SupplierManagement() {
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Products:</p>
                     <div className="flex flex-wrap gap-1">
-                      {supplier.products.slice(0, 3).map((product, index) => (
+                      {supplier.products?.map((product, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {product}
                         </Badge>
                       ))}
-                      {supplier.products.length > 3 && (
+                      {supplier.products && supplier.products.length > 3 && (
                         <Badge variant="outline" className="text-xs">
                           +{supplier.products.length - 3} more
                         </Badge>
@@ -536,12 +519,12 @@ export function SupplierManagement() {
                       <p className="text-sm text-muted-foreground">{order.supplier}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">KES {order.totalAmount.toLocaleString()}</p>
+                      <p className="font-semibold">KES {order.total_amount.toLocaleString()}</p>
                       <p className="text-sm text-muted-foreground">
-                        Order: {new Date(order.orderDate).toLocaleDateString()}
+                        Order: {new Date(order.order_date).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Delivery: {new Date(order.deliveryDate).toLocaleDateString()}
+                        Delivery: {new Date(order.delivery_date).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -552,7 +535,7 @@ export function SupplierManagement() {
                       {order.items.map((item, index) => (
                         <div key={index} className="flex justify-between text-sm">
                           <span>{item.product} (x{item.quantity})</span>
-                          <span>KES {(item.quantity * item.unitPrice).toLocaleString()}</span>
+                          <span>KES {(item.quantity * item.unit_price).toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -579,7 +562,7 @@ export function SupplierManagement() {
               <CardContent>
                 <div className="space-y-4">
                   {suppliers
-                    .sort((a, b) => b.totalOrders - a.totalOrders)
+                    .sort((a, b) => b.total_orders - a.total_orders)
                     .slice(0, 5)
                     .map((supplier) => (
                     <div key={supplier.id} className="flex justify-between items-center">
@@ -588,9 +571,9 @@ export function SupplierManagement() {
                         <p className="text-sm text-muted-foreground">{supplier.category}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{supplier.totalOrders} orders</p>
+                        <p className="font-medium">{supplier.total_orders || 0} orders</p>
                         <p className="text-sm text-muted-foreground">
-                          {getRatingStars(supplier.rating)} {supplier.rating}
+                          {getRatingStars(supplier.rating)} {supplier.rating || 0}
                         </p>
                       </div>
                     </div>
@@ -606,16 +589,16 @@ export function SupplierManagement() {
               <CardContent>
                 <div className="space-y-4">
                   {suppliers
-                    .filter(s => s.currentBalance > 0)
-                    .sort((a, b) => b.currentBalance - a.currentBalance)
+                    .filter(s => (s.current_balance || 0) > 0)
+                    .sort((a, b) => (b.current_balance || 0) - (a.current_balance || 0))
                     .map((supplier) => (
                     <div key={supplier.id} className="flex justify-between items-center">
                       <div>
                         <p className="font-medium">{supplier.name}</p>
-                        <p className="text-sm text-muted-foreground">{supplier.paymentTerms} terms</p>
+                        <p className="text-sm text-muted-foreground">{supplier.payment_terms || 'N/A'} terms</p>
                       </div>
                       <p className="font-medium text-orange-600">
-                        KES {supplier.currentBalance.toLocaleString()}
+                        KES {(supplier.current_balance || 0).toLocaleString()}
                       </p>
                     </div>
                   ))}

@@ -16,7 +16,7 @@ class RegisterAPIView(APIView):
             validated_data = serializer.validated_data
             try:
                 company_name = validated_data.get('company_name')
-                comany_size = validated_data.get('company_size')
+                company_size = validated_data.get('company_size')
                 phone_number = validated_data.get('phone_number')
                 
                 if Tenant.objects.filter(name = company_name).exists():
