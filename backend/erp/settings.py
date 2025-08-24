@@ -47,7 +47,6 @@ INSTALLED_APPS = [
 SHARED_APPS = (
     'django_tenants',
     'tenants',
-    'authentication',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -77,6 +76,8 @@ TENANT_APPS = [
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+AUTH_USER_MODEL = "authentication.User"
 
 
 DATABASE_ROUTERS = (

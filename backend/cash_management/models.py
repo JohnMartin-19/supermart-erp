@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 STATUS_CHOICES = [
@@ -8,7 +9,7 @@ STATUS_CHOICES = [
 
 class CashDrawer(models.Model):
     branch = models.ForeignKey('multi_location.Branch', on_delete=models.CASCADE)
-    cashier = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='cash_drawers')
+    cashier = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='cash_drawers')
     opening_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     current_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
