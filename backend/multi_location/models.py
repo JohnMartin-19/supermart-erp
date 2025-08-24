@@ -74,6 +74,7 @@ class Branch(models.Model):
     def __str__(self):
         return self.branch_name
     
+    verbose_name_plural = 'branches'
     
 class StockTransfer(models.Model):
     from_branch = models.ForeignKey('Branch', on_delete=models.CASCADE, related_name='outgoing_transfers')
