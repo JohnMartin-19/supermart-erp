@@ -31,6 +31,7 @@ import {
   Truck,
   Building2,
   Banknote,
+  LogOut, // Import the LogOut icon
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -38,6 +39,7 @@ interface LayoutProps {
   children: React.ReactNode;
   activeModule: string;
   onModuleChange: (module: string) => void;
+  onLogout: () => void; // Add the onLogout prop
 }
 
 const menuItems = [
@@ -46,7 +48,7 @@ const menuItems = [
     title: 'Dashboard',
     icon: LayoutDashboard,
   },
-]
+];
 
 const supermarketMenuItems = [
   {
@@ -125,7 +127,7 @@ const systemItems = [
   },
 ];
 
-export function Layout({ children, activeModule, onModuleChange }: LayoutProps) {
+export function Layout({ children, activeModule, onModuleChange, onLogout }: LayoutProps) {
   const [isDark, setIsDark] = useState(false);
 
   const toggleTheme = () => {
@@ -266,7 +268,16 @@ export function Layout({ children, activeModule, onModuleChange }: LayoutProps) 
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>
-            <div className="p-4">
+            <div className="p-4 space-y-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLogout}
+                className="w-full gap-2 justify-start"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

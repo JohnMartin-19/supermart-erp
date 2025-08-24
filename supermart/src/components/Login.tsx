@@ -8,7 +8,7 @@ import { Eye, EyeOff, Calculator, AlertCircle } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 
 interface LoginProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (email: string, username: string, password: string) => void;
   onSwitchToSignup: () => void;
   isLoading?: boolean;
   error?: string;
@@ -16,26 +16,33 @@ interface LoginProps {
 
 export function Login({ onLogin, onSwitchToSignup, isLoading = false, error }: LoginProps) {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({});
+  const [validationErrors, setValidationErrors] = useState<{ email?: string; username?: string; password?: string }>(
+    {}
+  );
 
   const validateForm = () => {
-    const errors: {email?: string; password?: string} = {};
-    
+    const errors: { email?: string; username?: string; password?: string } = {};
+
     if (!email) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
+
+    if (!username) {
+      errors.username = 'Username is required';
+    }
+
     if (!password) {
       errors.password = 'Password is required';
     } else if (password.length < 6) {
       errors.password = 'Password must be at least 6 characters';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -43,7 +50,7 @@ export function Login({ onLogin, onSwitchToSignup, isLoading = false, error }: L
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onLogin(email, password);
+      onLogin(email, username, password);
     }
   };
 
@@ -94,6 +101,23 @@ export function Login({ onLogin, onSwitchToSignup, isLoading = false, error }: L
                 )}
               </div>
 
+              {/* Username */}
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className={validationErrors.username ? 'border-destructive' : ''}
+                  disabled={isLoading}
+                />
+                {validationErrors.username && (
+                  <p className="text-sm text-destructive">{validationErrors.username}</p>
+                )}
+              </div>
+
               {/* Password */}
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -136,10 +160,7 @@ export function Login({ onLogin, onSwitchToSignup, isLoading = false, error }: L
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                     disabled={isLoading}
                   />
-                  <Label
-                    htmlFor="remember"
-                    className="text-sm font-normal cursor-pointer"
-                  >
+                  <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
                     Remember me
                   </Label>
                 </div>
@@ -154,11 +175,7 @@ export function Login({ onLogin, onSwitchToSignup, isLoading = false, error }: L
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
               <div className="text-center text-sm text-muted-foreground">
@@ -183,6 +200,7 @@ export function Login({ onLogin, onSwitchToSignup, isLoading = false, error }: L
             <div className="text-sm text-muted-foreground">
               <p className="mb-2">Demo credentials:</p>
               <p>Email: demo@company.com</p>
+              <p>Username: demo</p>
               <p>Password: demo123</p>
             </div>
           </CardContent>

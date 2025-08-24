@@ -26,9 +26,11 @@ SECRET_KEY = 'django-insecure-1jh*6%+1yy$42xg^zo*nv=xy84743+j&mr=2izm4260)8cw8^!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = [
+    'localhost:5173',
+    '127.0.0.1:5173',
+    'murimart.localhost',  
+]
 # Application definition
 
 INSTALLED_APPS = [
@@ -41,7 +43,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders,'
+    'corsheaders',
+    'rest_framework_simplejwt',
+    
+    
 ]
 
 SHARED_APPS = (
@@ -90,6 +95,7 @@ AUTHENTICATION_BACKENDS = (
 
 )
 
+CORS_ALLOW_ALL_ORIGINS = True
 
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
@@ -98,6 +104,7 @@ MIDDLEWARE = [
     'django_tenants.middleware.TenantMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -106,14 +113,14 @@ MIDDLEWARE = [
 ]
 
 
-# REST_FRAMEWORK = {
-#     "DEFAULT_AUTHENTICATION_CLASSES": [
-#         "erp.auth.TenantJWTAuthentication",  
-#     ],
-#     "DEFAULT_PERMISSION_CLASSES": [
-#         "rest_framework.permissions.IsAuthenticated",
-#     ],
-# }
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "authentication.auth.TenantJWTAuthentication",  
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+}
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),

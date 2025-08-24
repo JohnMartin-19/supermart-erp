@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Accounting } from './components/Accounting';
@@ -14,7 +14,11 @@ import { CustomerManagement } from './components/CustomerManagement';
 import { SupplierManagement } from './components/SupplierManagement';
 import { MultiLocationManagement } from './components/MultiLocationManagement';
 import { CashManagement } from './components/CashManagement';
-import './styles/globals.css'
+import { SignUp } from './components/SignUp';
+import { Login } from './components/Login';
+
+import './styles/globals.css';
+
 function Settings() {
   return (
     <div className="p-6">
@@ -64,6 +68,18 @@ function Settings() {
 
 export default function App() {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+
+  useEffect(() => {
+    // Check for existing tokens on app load
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken) {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleQuickInvoice = () => {
     setActiveModule('quick-invoice');
@@ -77,7 +93,7 @@ export default function App() {
     switch (activeModule) {
       case 'dashboard':
         return (
-          <Dashboard 
+          <Dashboard
             onQuickInvoice={handleQuickInvoice}
             onQuickBilling={handleQuickBilling}
           />
@@ -110,7 +126,7 @@ export default function App() {
         return <Settings />;
       default:
         return (
-          <Dashboard 
+          <Dashboard
             onQuickInvoice={handleQuickInvoice}
             onQuickBilling={handleQuickBilling}
           />
@@ -118,10 +134,60 @@ export default function App() {
     }
   };
 
+  const handleLogin = async (email: string, username: string, password: string) => {
+    setIsAuthLoading(true);
+    setAuthError('');
+    try {
+      // Corrected API endpoint URL
+      const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, username, password }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+        setIsLoggedIn(true);
+      } else {
+        setAuthError(data.detail || 'Login failed. Please check your credentials.');
+      }
+    } catch (error) {
+      setAuthError('An error occurred. Please try again later.');
+      console.error('Login error:', error);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setIsLoggedIn(false);
+    setActiveModule('dashboard');
+  };
+
+  if (!isLoggedIn) {
+    if (showSignup) {
+      return <SignUp onSwitchToLogin={() => setShowSignup(false)} />;
+    }
+    return (
+      <Login
+        onLogin={handleLogin}
+        onSwitchToSignup={() => setShowSignup(true)}
+        isLoading={isAuthLoading}
+        error={authError}
+      />
+    );
+  }
+
   return (
-    <Layout activeModule={activeModule} onModuleChange={setActiveModule}>
+    <Layout activeModule={activeModule} onModuleChange={setActiveModule} onLogout={handleLogout}>
       {renderModule()}
-      <FloatingActionButton 
+      <FloatingActionButton
         onQuickInvoice={handleQuickInvoice}
         onQuickBilling={handleQuickBilling}
       />
