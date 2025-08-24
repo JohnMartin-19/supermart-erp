@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -40,11 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders,'
 ]
 
 SHARED_APPS = (
     'django_tenants',
     'tenants',
+    'authentication',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,9 +58,11 @@ SHARED_APPS = (
 )
 
 TENANT_APPS = [
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.admin',
+    # tenant-specific apps...
+    'authentication',
     'products',
     'customers',
     'multi_location',
@@ -69,7 +74,6 @@ TENANT_APPS = [
     'inventory',
     'tax_compliance',
     'payroll',
-    
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -80,7 +84,8 @@ DATABASE_ROUTERS = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'django_tenants.auth.backends.TenantBackend',
+    # 'django_tenants.backends.TenantBackend',
+    'django.contrib.auth.backends.ModelBackend',
 
 )
 
@@ -98,6 +103,26 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+
+# REST_FRAMEWORK = {
+#     "DEFAULT_AUTHENTICATION_CLASSES": [
+#         "erp.auth.TenantJWTAuthentication",  
+#     ],
+#     "DEFAULT_PERMISSION_CLASSES": [
+#         "rest_framework.permissions.IsAuthenticated",
+#     ],
+# }
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "SIGNING_KEY": SECRET_KEY,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+CORS_ALLOW_ALL_ORIGINS = True 
 
 ROOT_URLCONF = 'erp.urls'
 ROOT_URLCONF_TENANT = 'erp.tenants_urls'
