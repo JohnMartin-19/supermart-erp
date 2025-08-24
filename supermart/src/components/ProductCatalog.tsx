@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,100 +9,72 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
-import { Package, Plus, Search, Filter, Edit, Trash2, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Package, Plus, Search, Filter, Edit, Trash2, AlertTriangle, TrendingUp, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface Product {
   id: string;
   name: string;
   barcode: string;
   category: string;
-  price: number;
-  costPrice: number;
-  stockLevel: number;
-  minStockLevel: number;
+  selling_price: number;
+  cost_price: number;
+  stock_level: number;
+  minimum_stock_level: number;
   supplier: string;
   description: string;
-  isActive: boolean;
-  vatApplicable: boolean;
+  is_active: boolean;
+  vat_applicable: boolean;
   perishable: boolean;
-  expiryDate?: string;
+  expiry_date?: string;
   unit: string;
 }
 
 export function ProductCatalog() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  
-  // Mock data - would come from Django API
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'Bread - White Loaf',
-      barcode: '1234567890',
-      category: 'Bakery',
-      price: 50,
-      costPrice: 35,
-      stockLevel: 25,
-      minStockLevel: 10,
-      supplier: 'Fresh Bakery Ltd',
-      description: 'Fresh white bread, baked daily',
-      isActive: true,
-      vatApplicable: true,
-      perishable: true,
-      expiryDate: '2024-08-20',
-      unit: 'piece'
-    },
-    {
-      id: '2',
-      name: 'Milk - 1L Fresh',
-      barcode: '2345678901',
-      category: 'Dairy',
-      price: 75,
-      costPrice: 55,
-      stockLevel: 50,
-      minStockLevel: 20,
-      supplier: 'Dairy Coop Kenya',
-      description: 'Fresh pasteurized milk',
-      isActive: true,
-      vatApplicable: false,
-      perishable: true,
-      expiryDate: '2024-08-22',
-      unit: 'liter'
-    },
-    {
-      id: '3',
-      name: 'Rice - 2kg Basmati',
-      barcode: '4567890123',
-      category: 'Grains',
-      price: 180,
-      costPrice: 140,
-      stockLevel: 8,
-      minStockLevel: 15,
-      supplier: 'Grain Distributors',
-      description: 'Premium basmati rice',
-      isActive: true,
-      vatApplicable: true,
-      perishable: false,
-      unit: 'kg'
-    },
-    {
-      id: '4',
-      name: 'Cooking Oil - 1L',
-      barcode: '6789012345',
-      category: 'Pantry',
-      price: 250,
-      costPrice: 200,
-      stockLevel: 30,
-      minStockLevel: 10,
-      supplier: 'Oil Mills Kenya',
-      description: 'Pure vegetable cooking oil',
-      isActive: true,
-      vatApplicable: true,
-      perishable: false,
-      unit: 'liter'
-    }
-  ]);
+
+  // Fetch products from the API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        console.log("Token:",token)
+        if (!token) {
+          setError('Authentication token not found. Please log in again.');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch products.');
+        }
+
+        const data = await response.json();
+        console.log("DATA:",data)
+        setProducts(data);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+        console.error("Failed to fetch products:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const categories = ['all', 'Bakery', 'Dairy', 'Grains', 'Pantry', 'Beverages', 'Snacks', 'Household'];
 
@@ -114,14 +86,37 @@ export function ProductCatalog() {
     return matchesSearch && matchesCategory;
   });
 
-  const lowStockProducts = products.filter(product => product.stockLevel <= product.minStockLevel);
+  const lowStockProducts = products.filter(product => product.stock_level <= product.minimum_stock_level);
   const perishableProducts = products.filter(product => product.perishable);
 
   const addProduct = () => {
-    // Would integrate with Django API
+    // This function will be updated to make a POST request to add a new product
     console.log('Adding new product...');
     setIsAddProductOpen(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -242,8 +237,8 @@ export function ProductCatalog() {
               <Card key={product.id} className="relative">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <Badge variant={product.isActive ? "default" : "secondary"}>
-                      {product.isActive ? "Active" : "Inactive"}
+                    <Badge variant={product.is_active ? "default" : "secondary"}>
+                      {product.is_active ? "Active" : "Inactive"}
                     </Badge>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
@@ -261,16 +256,16 @@ export function ProductCatalog() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm">Cost Price:</span>
-                      <span className="text-sm">KES {product.costPrice}</span>
+                      <span className="text-sm">KES {product.cost_price}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Selling Price:</span>
-                      <span className="text-sm font-medium">KES {product.price}</span>
+                      <span className="text-sm font-medium">KES {product.selling_price}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Margin:</span>
                       <span className="text-sm text-green-600">
-                        {((product.price - product.costPrice) / product.costPrice * 100).toFixed(1)}%
+                        {((product.selling_price - product.cost_price) / product.cost_price * 100).toFixed(1)}%
                       </span>
                     </div>
                   </div>
@@ -278,11 +273,11 @@ export function ProductCatalog() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Stock Level:</span>
-                      <Badge variant={product.stockLevel <= product.minStockLevel ? "destructive" : "secondary"}>
-                        {product.stockLevel} {product.unit}
+                      <Badge variant={product.stock_level <= product.minimum_stock_level ? "destructive" : "secondary"}>
+                        {product.stock_level} {product.unit}
                       </Badge>
                     </div>
-                    {product.stockLevel <= product.minStockLevel && (
+                    {product.stock_level <= product.minimum_stock_level && (
                       <div className="flex items-center gap-1 text-xs text-destructive">
                         <AlertTriangle className="h-3 w-3" />
                         Low Stock Alert
@@ -291,7 +286,7 @@ export function ProductCatalog() {
                   </div>
 
                   <div className="flex gap-2 text-xs">
-                    {product.vatApplicable && (
+                    {product.vat_applicable && (
                       <Badge variant="outline">VAT</Badge>
                     )}
                     {product.perishable && (
@@ -322,7 +317,7 @@ export function ProductCatalog() {
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium">{product.name}</h4>
                     <Badge variant="destructive">
-                      {product.stockLevel} / {product.minStockLevel}
+                      {product.stock_level} / {product.minimum_stock_level}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{product.category}</p>
@@ -350,15 +345,15 @@ export function ProductCatalog() {
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium">{product.name}</h4>
-                    <Badge variant="outline">{product.stockLevel} {product.unit}</Badge>
+                    <Badge variant="outline">{product.stock_level} {product.unit}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{product.category}</p>
-                  {product.expiryDate && (
+                  {product.expiry_date && (
                     <p className="text-sm text-orange-600">
-                      Expires: {new Date(product.expiryDate).toLocaleDateString()}
+                      Expires: {new Date(product.expiry_date).toLocaleDateString()}
                     </p>
                   )}
-                  <p className="text-sm">Price: KES {product.price}</p>
+                  <p className="text-sm">Price: KES {product.selling_price}</p>
                 </CardContent>
               </Card>
             ))}

@@ -16,8 +16,10 @@ import { MultiLocationManagement } from './components/MultiLocationManagement';
 import { CashManagement } from './components/CashManagement';
 import { SignUp } from './components/SignUp';
 import { Login } from './components/Login';
+import { Toaster } from 'sonner';
 
 import './styles/globals.css';
+import { toast } from 'sonner';
 
 function Settings() {
   return (
@@ -72,6 +74,7 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showDelayOverlay, setShowDelayOverlay] = useState(false); // New state for the overlay
 
   useEffect(() => {
     // Check for existing tokens on app load
@@ -133,12 +136,10 @@ export default function App() {
         );
     }
   };
-
   const handleLogin = async (email: string, username: string, password: string) => {
     setIsAuthLoading(true);
     setAuthError('');
     try {
-      // Corrected API endpoint URL
       const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/login/', {
         method: 'POST',
         headers: {
@@ -163,6 +164,43 @@ export default function App() {
     }
   };
 
+  const handleSignUp = async (userData: any) => {
+    setIsAuthLoading(true); // Start API loading state
+    setShowDelayOverlay(true); // Start showing the intentional delay overlay
+    setAuthError('');
+
+    try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/register/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            // Await the intentional delay before showing the success toast and redirecting
+            setTimeout(() => {
+                setShowDelayOverlay(false); // Hide the overlay after the delay
+                toast.success('Account created successfully!', {
+                    description: 'You can now log in with your new credentials.',
+                });
+                setShowSignup(false); // Redirect to login page
+            }, 5000); // 5-second delay
+        } else {
+            setAuthError(data.detail || 'Registration failed. Please try again.');
+            setShowDelayOverlay(false); // Hide overlay on API failure
+        }
+    } catch (error) {
+        setAuthError('An error occurred. Please try again later.');
+        console.error('Registration error:', error);
+        setShowDelayOverlay(false); // Hide overlay on network error
+    } finally {
+        setIsAuthLoading(false); // Always stop API loading, even if the overlay is still visible
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -172,25 +210,38 @@ export default function App() {
 
   if (!isLoggedIn) {
     if (showSignup) {
-      return <SignUp onSwitchToLogin={() => setShowSignup(false)} />;
+      return (
+        <SignUp
+          onSignUp={handleSignUp}
+          onSwitchToLogin={() => setShowSignup(false)}
+          isLoading={isAuthLoading || showDelayOverlay}
+          error={authError}
+        />
+      );
     }
     return (
-      <Login
-        onLogin={handleLogin}
-        onSwitchToSignup={() => setShowSignup(true)}
-        isLoading={isAuthLoading}
-        error={authError}
-      />
+      <>
+        <Login
+          onLogin={handleLogin}
+          onSwitchToSignup={() => setShowSignup(true)}
+          isLoading={isAuthLoading}
+          error={authError}
+        />
+        <Toaster />
+      </>
     );
   }
 
   return (
-    <Layout activeModule={activeModule} onModuleChange={setActiveModule} onLogout={handleLogout}>
-      {renderModule()}
-      <FloatingActionButton
-        onQuickInvoice={handleQuickInvoice}
-        onQuickBilling={handleQuickBilling}
-      />
-    </Layout>
+    <>
+      <Layout activeModule={activeModule} onModuleChange={setActiveModule} onLogout={handleLogout}>
+        {renderModule()}
+        <FloatingActionButton
+          onQuickInvoice={handleQuickInvoice}
+          onQuickBilling={handleQuickBilling}
+        />
+      </Layout>
+      <Toaster />
+    </>
   );
 }

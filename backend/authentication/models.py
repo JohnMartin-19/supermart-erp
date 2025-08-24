@@ -4,6 +4,7 @@ from tenants.models import Tenant
 from multi_location.models import Branch
 
 class User(AbstractUser):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     company_name = models.CharField(max_length=255, blank=True, null=True)
 

@@ -3,10 +3,12 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Alert, AlertDescription } from './ui/alert';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Eye, EyeOff, Calculator, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Toaster } from './ui/sooner'; 
+import { Loader2 } from 'lucide-react'; 
 
 interface SignUpProps {
   onSignUp: (userData: SignUpData) => void;
@@ -16,27 +18,29 @@ interface SignUpProps {
 }
 
 interface SignUpData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
+  username: string;
   password: string;
-  companyName: string;
-  companySize: string;
-  phone: string;
+  company_name: string;
+  company_size: string;
+  phone_number: string;
 }
 
 export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: SignUpProps) {
   const [formData, setFormData] = useState<SignUpData>({
-    firstName: '',
-    lastName: '',
+    first_name: '',
+    last_name: '',
     email: '',
+    username: '',
     password: '',
-    companyName: '',
-    companySize: '',
-    phone: '',
+    company_name: '',
+    company_size: '',
+    phone_number: '',
   });
 
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password2, setPassword2] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -48,21 +52,25 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
+
+    if (!formData.first_name.trim()) {
+      errors.first_name = 'First name is required';
     }
-    
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
+
+    if (!formData.last_name.trim()) {
+      errors.last_name = 'Last name is required';
     }
-    
+
+    if (!formData.username.trim()) {
+        errors.username = 'Username is required';
+    }
+
     if (!formData.email) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 8) {
@@ -70,31 +78,31 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
       errors.password = 'Password must contain uppercase, lowercase, and number';
     }
-    
-    if (!confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+
+    if (!password2) {
+      errors.password2 = 'Please confirm your password';
+    } else if (formData.password !== password2) {
+      errors.password2 = 'Passwords do not match';
     }
-    
-    if (!formData.companyName.trim()) {
-      errors.companyName = 'Company name is required';
+
+    if (!formData.company_name.trim()) {
+      errors.company_name = 'Company name is required';
     }
-    
-    if (!formData.companySize) {
-      errors.companySize = 'Please select company size';
+
+    if (!formData.company_size) {
+      errors.company_size = 'Please select company size';
     }
-    
-    if (!formData.phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else if (!/^\+?[\d\s-()]+$/.test(formData.phone)) {
-      errors.phone = 'Please enter a valid phone number';
+
+    if (!formData.phone_number.trim()) {
+      errors.phone_number = 'Phone number is required';
+    } else if (!/^\+?[\d\s-()]+$/.test(formData.phone_number)) {
+      errors.phone_number = 'Please enter a valid phone number';
     }
-    
+
     if (!agreeToTerms) {
       errors.terms = 'You must agree to the terms and conditions';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -102,24 +110,25 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSignUp(formData);
+      // Pass the complete user data, including the confirmed password
+      onSignUp({ ...formData });
     }
   };
 
   const getPasswordStrength = () => {
     const password = formData.password;
     if (!password) return { strength: 0, label: '' };
-    
+
     let strength = 0;
     if (password.length >= 8) strength++;
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
     if (/[^a-zA-Z\d]/.test(password)) strength++;
-    
+
     const labels = ['', 'Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
     const colors = ['', 'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
-    
+
     return { strength, label: labels[strength], color: colors[strength] };
   };
 
@@ -127,6 +136,14 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Loader2 className="h-16 w-16 text-primary animate-spin" />
+          <p className="mt-4 text-xl font-medium text-foreground">
+            Wait a minute as we set up your account...
+          </p>
+        </div>
+      )}
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
@@ -162,13 +179,13 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
                   <Input
                     id="firstName"
                     placeholder="Enter your first name"
-                    value={formData.firstName}
-                    onChange={(e) => updateFormData('firstName', e.target.value)}
-                    className={validationErrors.firstName ? 'border-destructive' : ''}
+                    value={formData.first_name}
+                    onChange={(e) => updateFormData('first_name', e.target.value)}
+                    className={validationErrors.first_name ? 'border-destructive' : ''}
                     disabled={isLoading}
                   />
-                  {validationErrors.firstName && (
-                    <p className="text-sm text-destructive">{validationErrors.firstName}</p>
+                  {validationErrors.first_name && (
+                    <p className="text-sm text-destructive">{validationErrors.first_name}</p>
                   )}
                 </div>
 
@@ -177,33 +194,51 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
                   <Input
                     id="lastName"
                     placeholder="Enter your last name"
-                    value={formData.lastName}
-                    onChange={(e) => updateFormData('lastName', e.target.value)}
-                    className={validationErrors.lastName ? 'border-destructive' : ''}
+                    value={formData.last_name}
+                    onChange={(e) => updateFormData('last_name', e.target.value)}
+                    className={validationErrors.last_name ? 'border-destructive' : ''}
                     disabled={isLoading}
                   />
-                  {validationErrors.lastName && (
-                    <p className="text-sm text-destructive">{validationErrors.lastName}</p>
+                  {validationErrors.last_name && (
+                    <p className="text-sm text-destructive">{validationErrors.last_name}</p>
                   )}
                 </div>
               </div>
 
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your business email"
-                  value={formData.email}
-                  onChange={(e) => updateFormData('email', e.target.value)}
-                  className={validationErrors.email ? 'border-destructive' : ''}
-                  disabled={isLoading}
-                />
-                {validationErrors.email && (
-                  <p className="text-sm text-destructive">{validationErrors.email}</p>
-                )}
+              {/* Email & Username */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your business email"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    className={validationErrors.email ? 'border-destructive' : ''}
+                    disabled={isLoading}
+                    />
+                    {validationErrors.email && (
+                    <p className="text-sm text-destructive">{validationErrors.email}</p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                    id="username"
+                    type="text"
+                    placeholder="Create a unique username"
+                    value={formData.username}
+                    onChange={(e) => updateFormData('username', e.target.value)}
+                    className={validationErrors.username ? 'border-destructive' : ''}
+                    disabled={isLoading}
+                    />
+                    {validationErrors.username && (
+                    <p className="text-sm text-destructive">{validationErrors.username}</p>
+                    )}
+                </div>
               </div>
+
 
               {/* Phone */}
               <div className="space-y-2">
@@ -211,13 +246,13 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
                 <Input
                   id="phone"
                   placeholder="+91 98765 43210"
-                  value={formData.phone}
-                  onChange={(e) => updateFormData('phone', e.target.value)}
-                  className={validationErrors.phone ? 'border-destructive' : ''}
+                  value={formData.phone_number}
+                  onChange={(e) => updateFormData('phone_number', e.target.value)}
+                  className={validationErrors.phone_number ? 'border-destructive' : ''}
                   disabled={isLoading}
                 />
-                {validationErrors.phone && (
-                  <p className="text-sm text-destructive">{validationErrors.phone}</p>
+                {validationErrors.phone_number && (
+                  <p className="text-sm text-destructive">{validationErrors.phone_number}</p>
                 )}
               </div>
 
@@ -228,24 +263,24 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
                   <Input
                     id="companyName"
                     placeholder="Enter your company name"
-                    value={formData.companyName}
-                    onChange={(e) => updateFormData('companyName', e.target.value)}
-                    className={validationErrors.companyName ? 'border-destructive' : ''}
+                    value={formData.company_name}
+                    onChange={(e) => updateFormData('company_name', e.target.value)}
+                    className={validationErrors.company_name ? 'border-destructive' : ''}
                     disabled={isLoading}
                   />
-                  {validationErrors.companyName && (
-                    <p className="text-sm text-destructive">{validationErrors.companyName}</p>
+                  {validationErrors.company_name && (
+                    <p className="text-sm text-destructive">{validationErrors.company_name}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="companySize">Company Size</Label>
                   <Select
-                    value={formData.companySize}
-                    onValueChange={(value) => updateFormData('companySize', value)}
+                    value={formData.company_size}
+                    onValueChange={(value) => updateFormData('company_size', value)}
                     disabled={isLoading}
                   >
-                    <SelectTrigger className={validationErrors.companySize ? 'border-destructive' : ''}>
+                    <SelectTrigger className={validationErrors.company_size ? 'border-destructive' : ''}>
                       <SelectValue placeholder="Select company size" />
                     </SelectTrigger>
                     <SelectContent>
@@ -256,8 +291,8 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
                       <SelectItem value="500+">500+ employees</SelectItem>
                     </SelectContent>
                   </Select>
-                  {validationErrors.companySize && (
-                    <p className="text-sm text-destructive">{validationErrors.companySize}</p>
+                  {validationErrors.company_size && (
+                    <p className="text-sm text-destructive">{validationErrors.company_size}</p>
                   )}
                 </div>
               </div>
@@ -312,15 +347,15 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="password2">Confirm Password</Label>
                 <div className="relative">
                   <Input
-                    id="confirmPassword"
+                    id="password2"
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={validationErrors.confirmPassword ? 'border-destructive pr-10' : 'pr-10'}
+                    value={password2}
+                    onChange={(e) => setPassword2(e.target.value)}
+                    className={validationErrors.password2 ? 'border-destructive pr-10' : 'pr-10'}
                     disabled={isLoading}
                   />
                   <Button
@@ -337,12 +372,12 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
                   </Button>
-                  {confirmPassword && formData.password === confirmPassword && (
+                  {password2 && formData.password === password2 && (
                     <CheckCircle2 className="absolute right-10 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
                   )}
                 </div>
-                {validationErrors.confirmPassword && (
-                  <p className="text-sm text-destructive">{validationErrors.confirmPassword}</p>
+                {validationErrors.password2 && (
+                  <p className="text-sm text-destructive">{validationErrors.password2}</p>
                 )}
               </div>
 
@@ -376,11 +411,7 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </Button>
               <div className="text-center text-sm text-muted-foreground">

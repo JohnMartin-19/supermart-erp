@@ -22,7 +22,7 @@ class Supplier(models.Model):
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return self.name
+        return self.company_name
     
 class PurchaseOrder(models.Model):
     supplier = models.ForeignKey(Supplier,on_delete=models.SET_NULL,null=True)

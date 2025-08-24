@@ -55,7 +55,7 @@ class Product(models.Model):
     is_perishable = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     #multi-tenancy
-    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE,related_name='product_catalog_items')
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE,related_name='product_catalog_items', null=True, blank=True)
 
     def __str__(self):
         return self.name
