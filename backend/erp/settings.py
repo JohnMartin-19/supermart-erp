@@ -79,6 +79,12 @@ DATABASE_ROUTERS = (
     'django_tenants.routers.TenantSyncRouter',
 )
 
+AUTHENTICATION_BACKENDS = (
+    'django_tenants.auth.backends.TenantBackend',
+
+)
+
+
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
 
