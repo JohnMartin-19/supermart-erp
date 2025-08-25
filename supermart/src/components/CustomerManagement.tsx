@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,86 +7,169 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Users, Plus, Search, Phone, CreditCard, TrendingUp, Gift, UserPlus } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, TrendingUp, Gift, UserPlus, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Progress } from './ui/progress';
 
 interface Customer {
-  id: string;
-  name: string;
-  phone: string;
+  id: number;
+  full_name: string;
+  phone_number: string;
   email?: string;
   address?: string;
-  membershipTier: 'regular' | 'silver' | 'gold' | 'platinum';
-  loyaltyPoints: number;
-  totalSpent: number;
-  lastVisit: string;
-  joinDate: string;
-  isActive: boolean;
+  membership_tier: number;
+  member_since: string;
+  last_visit: string;
+  loyalty_points?: number;
+  total_spent?: number;
+  is_active?: boolean;
 }
+
+interface TransformedCustomer extends Omit<Customer, 'membership_tier'> {
+  membership_tier: number;
+  membership_tier_string: 'regular' | 'silver' | 'gold' | 'platinum';
+}
+
+// A mapping from string tier names to their numerical IDs for POST requests
+const tierMap = {
+  regular: 1,
+  silver: 2,
+  gold: 3,
+  platinum: 4,
+};
+
+// Helper function to map numerical tiers to string names for the UI
+const mapTierNumberToString = (tierNumber: number): 'regular' | 'silver' | 'gold' | 'platinum' => {
+  switch (tierNumber) {
+    case 1:
+      return 'regular';
+    case 2:
+      return 'silver';
+    case 3:
+      return 'gold';
+    case 4:
+      return 'platinum';
+    default:
+      return 'regular';
+  }
+};
 
 export function CustomerManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState('all');
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [customers, setCustomers] = useState<TransformedCustomer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - would come from Django API
-  const [customers] = useState<Customer[]>([
-    {
-      id: '1',
-      name: 'Grace Wanjiku',
-      phone: '+254 722 123 456',
-      email: 'grace@email.com',
-      address: 'Karen, Nairobi',
-      membershipTier: 'gold',
-      loyaltyPoints: 2850,
-      totalSpent: 485000,
-      lastVisit: '2024-08-17',
-      joinDate: '2023-05-15',
-      isActive: true
-    },
-    {
-      id: '2',
-      name: 'David Kimani',
-      phone: '+254 733 234 567',
-      membershipTier: 'silver',
-      loyaltyPoints: 1420,
-      totalSpent: 285000,
-      lastVisit: '2024-08-16',
-      joinDate: '2023-08-20',
-      isActive: true
-    },
-    {
-      id: '3',
-      name: 'Mary Njeri',
-      phone: '+254 700 345 678',
-      email: 'mary.njeri@email.com',
-      address: 'Westlands, Nairobi',
-      membershipTier: 'platinum',
-      loyaltyPoints: 5200,
-      totalSpent: 850000,
-      lastVisit: '2024-08-17',
-      joinDate: '2022-11-10',
-      isActive: true
-    },
-    {
-      id: '4',
-      name: 'Peter Ochieng',
-      phone: '+254 711 456 789',
-      membershipTier: 'regular',
-      loyaltyPoints: 450,
-      totalSpent: 95000,
-      lastVisit: '2024-08-15',
-      joinDate: '2024-02-28',
-      isActive: true
-    }
-  ]);
-
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.phone.includes(searchQuery) ||
-                         customer.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTier = selectedTier === 'all' || customer.membershipTier === selectedTier;
-    return matchesSearch && matchesTier;
+  // State for the new customer form
+  const [newCustomer, setNewCustomer] = useState({
+    full_name: '',
+    phone_number: '',
+    email: '',
+    address: '',
+    membership_tier: 'regular',
   });
+  const [isAdding, setIsAdding] = useState(false);
+  const [addCustomerError, setAddCustomerError] = useState<string | null>(null);
+  const [addCustomerSuccess, setAddCustomerSuccess] = useState(false);
+
+  const fetchCustomers = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://murimart.localhost:8000/api/v1/customers/customers/', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch customers.');
+      }
+
+      const data: Customer[] = await response.json();
+      
+      const transformedData: TransformedCustomer[] = data.map((customer) => ({
+        ...customer,
+        membership_tier_string: mapTierNumberToString(customer.membership_tier),
+      }));
+
+      setCustomers(transformedData);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    setAddCustomerError(null);
+    setAddCustomerSuccess(false);
+
+    try {
+      const payload = {
+        full_name: newCustomer.full_name,
+        phone_number: newCustomer.phone_number,
+        email: newCustomer.email,
+        address: newCustomer.address,
+        // Convert the string tier from the form to the numerical ID for the backend
+        membership_tier: tierMap[newCustomer.membership_tier as keyof typeof tierMap],
+        // You may need to add other required fields with default values, like 'is_active'
+      };
+
+      const response = await fetch('http://murimart.localhost:8000/api/v1/customers/customers/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to add customer.');
+      }
+
+      const addedCustomer: Customer = await response.json();
+      
+      // Transform the added customer data to match the UI state
+      const transformedAddedCustomer: TransformedCustomer = {
+        ...addedCustomer,
+        membership_tier_string: mapTierNumberToString(addedCustomer.membership_tier),
+      };
+
+      setCustomers(prevCustomers => [...prevCustomers, transformedAddedCustomer]);
+      setAddCustomerSuccess(true);
+
+      // Reset the form after successful submission
+      setNewCustomer({
+        full_name: '',
+        phone_number: '',
+        email: '',
+        address: '',
+        membership_tier: 'regular',
+      });
+
+    } catch (err: any) {
+      setAddCustomerError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsAdding(false);
+      // Close dialog after a short delay to show success/error message
+      setTimeout(() => {
+        setIsAddCustomerOpen(false);
+      }, 1500);
+    }
+  };
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -106,10 +189,41 @@ export function CustomerManagement() {
     }
   };
 
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         customer.phone_number?.includes(searchQuery) ||
+                         customer.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTier = selectedTier === 'all' || customer.membership_tier_string === selectedTier;
+    return matchesSearch && matchesTier;
+  });
+
   const totalCustomers = customers.length;
-  const activeCustomers = customers.filter(c => c.isActive).length;
-  const totalLoyaltyPoints = customers.reduce((sum, c) => sum + c.loyaltyPoints, 0);
-  const averageSpent = customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length;
+  const activeCustomers = customers.filter(c => c.is_active).length;
+  const totalLoyaltyPoints = customers.reduce((sum, c) => sum + (c.loyalty_points || 0), 0);
+  const averageSpent = customers.length > 0 ? customers.reduce((sum, c) => sum + (c.total_spent || 0), 0) / customers.length : 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading customers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -120,7 +234,11 @@ export function CustomerManagement() {
         </div>
         <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" onClick={() => {
+              setIsAddCustomerOpen(true);
+              setAddCustomerError(null);
+              setAddCustomerSuccess(false);
+            }}>
               <Plus className="h-4 w-4" />
               Add Customer
             </Button>
@@ -129,47 +247,98 @@ export function CustomerManagement() {
             <DialogHeader>
               <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-1 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Enter customer name" />
+            <form onSubmit={handleAddCustomer}>
+              <div className="grid grid-cols-1 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    placeholder="Enter customer name"
+                    value={newCustomer.full_name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, full_name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <Input
+                    id="phone_number"
+                    placeholder="+254 700 000 000"
+                    value={newCustomer.phone_number}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phone_number: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email (Optional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="customer@email.com"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address (Optional)</Label>
+                  <Input
+                    id="address"
+                    placeholder="Customer address"
+                    value={newCustomer.address}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="membership_tier">Membership Tier</Label>
+                  <Select
+                    value={newCustomer.membership_tier}
+                    onValueChange={(value) => setNewCustomer({ ...newCustomer, membership_tier: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular">Regular</SelectItem>
+                      <SelectItem value="silver">Silver</SelectItem>
+                      <SelectItem value="gold">Gold</SelectItem>
+                      <SelectItem value="platinum">Platinum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" placeholder="+254 700 000 000" />
+              
+              {isAdding && (
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Adding customer...</span>
+                </div>
+              )}
+              {addCustomerError && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{addCustomerError}</AlertDescription>
+                </Alert>
+              )}
+              {addCustomerSuccess && (
+                <Alert className="mt-4 border-green-500">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <AlertTitle>Success</AlertTitle>
+                  <AlertDescription>Customer added successfully!</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" type="button" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={isAdding}>
+                  {isAdding ? 'Adding...' : 'Add Customer'}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email (Optional)</Label>
-                <Input id="email" type="email" placeholder="customer@email.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address (Optional)</Label>
-                <Input id="address" placeholder="Customer address" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tier">Membership Tier</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="regular">Regular</SelectItem>
-                    <SelectItem value="silver">Silver</SelectItem>
-                    <SelectItem value="gold">Gold</SelectItem>
-                    <SelectItem value="platinum">Platinum</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
-              <Button>Add Customer</Button>
-            </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
@@ -263,16 +432,16 @@ export function CustomerManagement() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-base flex items-center gap-2">
-                        {customer.name}
-                        <span className="text-lg">{getTierIcon(customer.membershipTier)}</span>
+                        {customer.full_name}
+                        <span className="text-lg">{getTierIcon(customer.membership_tier_string)}</span>
                       </CardTitle>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                         <Phone className="h-3 w-3" />
-                        {customer.phone}
+                        {customer.phone_number}
                       </div>
                     </div>
-                    <Badge className={getTierColor(customer.membershipTier)}>
-                      {customer.membershipTier.charAt(0).toUpperCase() + customer.membershipTier.slice(1)}
+                    <Badge className={getTierColor(customer.membership_tier_string)}>
+                      {customer.membership_tier_string.charAt(0).toUpperCase() + customer.membership_tier_string.slice(1)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -289,20 +458,20 @@ export function CustomerManagement() {
                       <p className="text-xs text-muted-foreground">Loyalty Points</p>
                       <p className="font-medium flex items-center gap-1">
                         <Gift className="h-3 w-3" />
-                        {customer.loyaltyPoints.toLocaleString()}
+                        {(customer.loyalty_points || 0).toLocaleString()}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Total Spent</p>
-                      <p className="font-medium">KES {Math.round(customer.totalSpent / 1000)}K</p>
+                      <p className="font-medium">KES {Math.round((customer.total_spent || 0) / 1000)}K</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Last Visit</p>
-                      <p className="text-xs">{new Date(customer.lastVisit).toLocaleDateString()}</p>
+                      <p className="text-xs">{new Date(customer.last_visit).toLocaleDateString()}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Member Since</p>
-                      <p className="text-xs">{new Date(customer.joinDate).toLocaleDateString()}</p>
+                      <p className="text-xs">{new Date(customer.member_since).toLocaleDateString()}</p>
                     </div>
                   </div>
 
@@ -410,25 +579,25 @@ export function CustomerManagement() {
                     <span className="flex items-center gap-2">
                       <span>👤</span> Regular
                     </span>
-                    <span>{customers.filter(c => c.membershipTier === 'regular').length}</span>
+                    <span>{customers.filter(c => c.membership_tier_string === 'regular').length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span>🥈</span> Silver
                     </span>
-                    <span>{customers.filter(c => c.membershipTier === 'silver').length}</span>
+                    <span>{customers.filter(c => c.membership_tier_string === 'silver').length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span>🥇</span> Gold
                     </span>
-                    <span>{customers.filter(c => c.membershipTier === 'gold').length}</span>
+                    <span>{customers.filter(c => c.membership_tier_string === 'gold').length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span>💎</span> Platinum
                     </span>
-                    <span>{customers.filter(c => c.membershipTier === 'platinum').length}</span>
+                    <span>{customers.filter(c => c.membership_tier_string === 'platinum').length}</span>
                   </div>
                 </div>
               </CardContent>
@@ -441,15 +610,15 @@ export function CustomerManagement() {
               <CardContent>
                 <div className="space-y-3">
                   {customers
-                    .sort((a, b) => b.totalSpent - a.totalSpent)
+                    .sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0))
                     .slice(0, 5)
-                    .map((customer, index) => (
+                    .map((customer) => (
                     <div key={customer.id} className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{getTierIcon(customer.membershipTier)}</span>
-                        <span className="font-medium">{customer.name}</span>
+                        <span className="text-lg">{getTierIcon(customer.membership_tier_string)}</span>
+                        <span className="font-medium">{customer.full_name}</span>
                       </div>
-                      <span>KES {Math.round(customer.totalSpent / 1000)}K</span>
+                      <span>KES {Math.round((customer.total_spent || 0) / 1000)}K</span>
                     </div>
                   ))}
                 </div>
