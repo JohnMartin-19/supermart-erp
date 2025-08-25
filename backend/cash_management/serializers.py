@@ -7,6 +7,7 @@ class CashDrawerSerializer(serializers.ModelSerializer):
         model = CashDrawer
         fields = ['id','branch','cashier','opening_balance',
                   'current_balance','status','opened_at','closed_at','tenant']
+        read_only_fields = ['tenant']
         
 class CashReconciliationSerializer(serializers.ModelSerializer):
     

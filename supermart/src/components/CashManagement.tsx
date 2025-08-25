@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from './ui/dialog';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Banknote, CreditCard, TrendingUp, TrendingDown, Plus, Calendar, Building2, Eye } from 'lucide-react';
+import { Banknote, CreditCard, TrendingUp, TrendingDown, Plus, Calendar, Building2, Eye, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface CashTransaction {
   id: string;
@@ -25,13 +26,13 @@ interface CashDrawer {
   id: string;
   branch: string;
   cashier: string;
-  openingBalance: number;
-  currentBalance: number;
-  totalSales: number;
-  totalExpenses: number;
+  opening_balance: number;
+  current_balance: number;
+  total_sales: number;
+  total_expenses: number;
   status: 'open' | 'closed';
-  openedAt: string;
-  closedAt?: string;
+  opened_at: string;
+  closed_at?: string;
 }
 
 export function CashManagement() {
@@ -40,44 +41,24 @@ export function CashManagement() {
   const [isReconcileOpen, setIsReconcileOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
 
-  // Mock data - would come from Django API
-  const [cashDrawers] = useState<CashDrawer[]>([
-    {
-      id: '1',
-      branch: 'Main Store - Nairobi CBD',
-      cashier: 'Alice Wanjiku',
-      openingBalance: 10000,
-      currentBalance: 45230,
-      totalSales: 125000,
-      totalExpenses: 3500,
-      status: 'open',
-      openedAt: '2024-08-17 08:00:00',
-    },
-    {
-      id: '2',
-      branch: 'Westlands Branch',
-      cashier: 'John Kimani',
-      openingBalance: 8000,
-      currentBalance: 28750,
-      totalSales: 85000,
-      totalExpenses: 2000,
-      status: 'open',
-      openedAt: '2024-08-17 08:30:00',
-    },
-    {
-      id: '3',
-      branch: 'Nakuru Branch',
-      cashier: 'Mary Njeri',
-      openingBalance: 6000,
-      currentBalance: 0,
-      totalSales: 75000,
-      totalExpenses: 1500,
-      status: 'closed',
-      openedAt: '2024-08-16 08:00:00',
-      closedAt: '2024-08-16 20:00:00',
-    }
-  ]);
+  // States for fetching cash drawers
+  const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // States for the Record Expense form
+  const [newExpense, setNewExpense] = useState({ branch: '', amount: 0, description: '' });
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [expenseError, setExpenseError] = useState<string | null>(null);
+  const [expenseSuccess, setExpenseSuccess] = useState(false);
+
+  // States for the Reconcile form
+  const [reconciliation, setReconciliation] = useState({ branch: '', actual_count: 0, notes: '' });
+  const [isReconciling, setIsReconciling] = useState(false);
+  const [reconciliationError, setReconciliationError] = useState<string | null>(null);
+  const [reconciliationSuccess, setReconciliationSuccess] = useState(false);
+
+  // Mock data for transactions as no API endpoint was provided
   const [transactions] = useState<CashTransaction[]>([
     {
       id: '1',
@@ -99,39 +80,125 @@ export function CashManagement() {
       timestamp: '2024-08-17 14:25:00',
       paymentMethod: 'mpesa'
     },
-    {
-      id: '3',
-      type: 'expense',
-      amount: 500,
-      description: 'Office supplies purchase',
-      branch: 'Main Store - Nairobi CBD',
-      cashier: 'Alice Wanjiku',
-      timestamp: '2024-08-17 13:45:00',
-      paymentMethod: 'cash'
-    },
-    {
-      id: '4',
-      type: 'sale',
-      amount: 3200,
-      description: 'Customer purchase - Receipt #W001',
-      branch: 'Westlands Branch',
-      cashier: 'John Kimani',
-      timestamp: '2024-08-17 14:20:00',
-      paymentMethod: 'card'
-    },
-    {
-      id: '5',
-      type: 'deposit',
-      amount: 5000,
-      description: 'Cash deposit from manager',
-      branch: 'Westlands Branch',
-      cashier: 'John Kimani',
-      timestamp: '2024-08-17 12:00:00',
-      paymentMethod: 'cash'
-    }
   ]);
 
-  const branches = ['all', 'Main Store - Nairobi CBD', 'Westlands Branch', 'Nakuru Branch', 'Mombasa Road Branch'];
+  const branches = ['all', ...Array.from(new Set(cashDrawers.map(d => d.branch)))];
+
+  // Fetch cash drawers on component mount
+  useEffect(() => {
+    const fetchCashDrawers = async () => {
+      try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_drawers/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch cash drawers.');
+        }
+        
+        const data = await response.json();
+        setCashDrawers(data);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCashDrawers();
+  }, []);
+
+  // Handlers for form submissions
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingExpense(true);
+    setExpenseError(null);
+    setExpenseSuccess(false);
+
+    try {
+      const payload = {
+        amount: newExpense.amount,
+        description: newExpense.description,
+        branch: newExpense.branch,
+        // Assuming cashier info comes from the backend or context
+      };
+
+      const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_expenses/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to record expense.');
+      }
+      
+      setExpenseSuccess(true);
+      setNewExpense({ branch: '', amount: 0, description: '' });
+
+      // Refresh data after successful addition
+      // Note: A more efficient approach would be to update the state directly
+      setTimeout(() => {
+        window.location.reload(); 
+      }, 1000);
+
+    } catch (err: any) {
+      setExpenseError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsAddingExpense(false);
+    }
+  };
+
+  const handleReconciliation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsReconciling(true);
+    setReconciliationError(null);
+    setReconciliationSuccess(false);
+
+    try {
+      const payload = {
+        branch: reconciliation.branch,
+        actual_count: reconciliation.actual_count,
+        notes: reconciliation.notes,
+        // Assuming cashier info comes from the backend or context
+      };
+
+      const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_reconciliations/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to reconcile cash drawer.');
+      }
+
+      setReconciliationSuccess(true);
+      setReconciliation({ branch: '', actual_count: 0, notes: '' });
+
+      // Refresh data after successful reconciliation
+      // Note: A more efficient approach would be to update the state directly
+      setTimeout(() => {
+        window.location.reload(); 
+      }, 1000);
+
+    } catch (err: any) {
+      setReconciliationError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsReconciling(false);
+    }
+  };
 
   const filteredDrawers = selectedBranch === 'all' 
     ? cashDrawers 
@@ -141,9 +208,9 @@ export function CashManagement() {
     ? transactions
     : transactions.filter(transaction => transaction.branch === selectedBranch);
 
-  const totalCash = cashDrawers.reduce((sum, drawer) => sum + drawer.currentBalance, 0);
-  const totalSales = cashDrawers.reduce((sum, drawer) => sum + drawer.totalSales, 0);
-  const totalExpenses = cashDrawers.reduce((sum, drawer) => sum + drawer.totalExpenses, 0);
+  const totalCash = cashDrawers.reduce((sum, drawer) => sum + (drawer.current_balance || 0), 0);
+  const totalSales = cashDrawers.reduce((sum, drawer) => sum + (drawer.total_sales || 0), 0);
+  const totalExpenses = cashDrawers.reduce((sum, drawer) => sum + (drawer.total_expenses || 0), 0);
   const openDrawers = cashDrawers.filter(drawer => drawer.status === 'open').length;
 
   const getTransactionIcon = (type: string) => {
@@ -175,6 +242,29 @@ export function CashManagement() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading cash drawers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -194,33 +284,73 @@ export function CashManagement() {
               <DialogHeader>
                 <DialogTitle>Record Cash Expense</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>Branch</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.slice(1).map(branch => (
-                        <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <form onSubmit={handleAddExpense}>
+                <div className="grid grid-cols-1 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="branch-expense">Branch</Label>
+                    <Select
+                      value={newExpense.branch}
+                      onValueChange={(value) => setNewExpense({ ...newExpense, branch: value })}
+                    >
+                      <SelectTrigger id="branch-expense">
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.slice(1).map(branch => (
+                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="amount-expense">Amount (KES)</Label>
+                    <Input 
+                      id="amount-expense" 
+                      type="number" 
+                      placeholder="0.00" 
+                      value={newExpense.amount}
+                      onChange={(e) => setNewExpense({ ...newExpense, amount: Number(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description-expense">Description</Label>
+                    <Textarea 
+                      id="description-expense" 
+                      placeholder="What was this expense for?"
+                      value={newExpense.description}
+                      onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Amount (KES)</Label>
-                  <Input type="number" placeholder="0.00" />
+                {isAddingExpense && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Recording expense...</span>
+                  </div>
+                )}
+                {expenseError && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{expenseError}</AlertDescription>
+                  </Alert>
+                )}
+                {expenseSuccess && (
+                  <Alert className="mt-4 border-green-500">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertTitle>Success</AlertTitle>
+                    <AlertDescription>Expense recorded successfully!</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" type="button" onClick={() => setIsExpenseOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isAddingExpense}>
+                    {isAddingExpense ? 'Recording...' : 'Record Expense'}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea placeholder="What was this expense for?" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsExpenseOpen(false)}>Cancel</Button>
-                <Button>Record Expense</Button>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
 
@@ -235,33 +365,72 @@ export function CashManagement() {
               <DialogHeader>
                 <DialogTitle>Cash Drawer Reconciliation</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>Branch</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.slice(1).map(branch => (
-                        <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <form onSubmit={handleReconciliation}>
+                <div className="grid grid-cols-1 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="branch-reconcile">Branch</Label>
+                    <Select
+                      value={reconciliation.branch}
+                      onValueChange={(value) => setReconciliation({ ...reconciliation, branch: value })}
+                    >
+                      <SelectTrigger id="branch-reconcile">
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.slice(1).map(branch => (
+                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="count-reconcile">Actual Cash Count (KES)</Label>
+                    <Input 
+                      id="count-reconcile" 
+                      type="number" 
+                      placeholder="0.00" 
+                      value={reconciliation.actual_count}
+                      onChange={(e) => setReconciliation({ ...reconciliation, actual_count: Number(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes-reconcile">Notes</Label>
+                    <Textarea 
+                      id="notes-reconcile" 
+                      placeholder="Any discrepancies or notes"
+                      value={reconciliation.notes}
+                      onChange={(e) => setReconciliation({ ...reconciliation, notes: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Actual Cash Count (KES)</Label>
-                  <Input type="number" placeholder="0.00" />
+                {isReconciling && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Reconciling...</span>
+                  </div>
+                )}
+                {reconciliationError && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{reconciliationError}</AlertDescription>
+                  </Alert>
+                )}
+                {reconciliationSuccess && (
+                  <Alert className="mt-4 border-green-500">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertTitle>Success</AlertTitle>
+                    <AlertDescription>Reconciliation successful!</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" type="button" onClick={() => setIsReconcileOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isReconciling}>
+                    {isReconciling ? 'Reconciling...' : 'Reconcile'}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea placeholder="Any discrepancies or notes" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsReconcileOpen(false)}>Cancel</Button>
-                <Button>Reconcile</Button>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -365,31 +534,31 @@ export function CashManagement() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Opening Balance</p>
-                      <p className="font-semibold">KES {drawer.openingBalance.toLocaleString()}</p>
+                      <p className="font-semibold">KES {drawer.opening_balance.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Current Balance</p>
-                      <p className="font-semibold">KES {drawer.currentBalance.toLocaleString()}</p>
+                      <p className="font-semibold">KES {drawer.current_balance.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sales</p>
-                      <p className="font-semibold text-green-600">KES {drawer.totalSales.toLocaleString()}</p>
+                      <p className="font-semibold text-green-600">KES {drawer.total_sales.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Expenses</p>
-                      <p className="font-semibold text-red-600">KES {drawer.totalExpenses.toLocaleString()}</p>
+                      <p className="font-semibold text-red-600">KES {drawer.total_expenses.toLocaleString()}</p>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Opened:</span>
-                      <span>{new Date(drawer.openedAt).toLocaleString()}</span>
+                      <span>{new Date(drawer.opened_at).toLocaleString()}</span>
                     </div>
-                    {drawer.closedAt && (
+                    {drawer.closed_at && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Closed:</span>
-                        <span>{new Date(drawer.closedAt).toLocaleString()}</span>
+                        <span>{new Date(drawer.closed_at).toLocaleString()}</span>
                       </div>
                     )}
                   </div>
