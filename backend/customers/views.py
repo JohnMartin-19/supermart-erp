@@ -23,9 +23,9 @@ class CustomerListCreateAPIView(APIView):
     def post(self, request):
         serializer = CustomerSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(tenant=request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.error)
+        return Response(serializer.errors)
         
         
         

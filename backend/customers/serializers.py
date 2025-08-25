@@ -6,5 +6,6 @@ class CustomerSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Customer
-        fields = ['id','full_name','email','phone_number','address','membership_tier','member_since','last_visit','updated_at','tenant']
-        read_only_field = 'tenant'
+        fields = ['id','full_name','email','phone_number','address','membership_tier',
+                  'member_since','last_visit','updated_at','tenant']
+        read_only_fields = ['tenant']
