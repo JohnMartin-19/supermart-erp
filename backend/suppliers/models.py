@@ -16,6 +16,7 @@ class Supplier(models.Model):
     email = models.EmailField(blank=True)
     category = models.CharField(max_length=100, choices=CATEGORIES,null=True)
     address = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
     payment_terms = models.CharField(max_length=100)
     credit_limit = models.PositiveBigIntegerField(null=True)
     is_active = models.BooleanField(default=True)

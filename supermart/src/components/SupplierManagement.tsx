@@ -193,7 +193,7 @@ export function SupplierManagement() {
       setIsAdding(false);
       setTimeout(() => {
         setIsAddSupplierOpen(false);
-      }, 1500); // Close dialog after 1.5 seconds
+      }, 1500); 
     }
   };
 
@@ -209,7 +209,7 @@ export function SupplierManagement() {
                          supplier.phone_number?.includes(searchQuery);
     const matchesCategory = selectedCategory === 'all' || supplier.category === selectedCategory;
     
-    // Check against the is_active boolean field
+   
     const matchesStatus = selectedStatus === 'all' || (selectedStatus === 'active' && supplier.is_active) || (selectedStatus === 'inactive' && !supplier.is_active);
     
     return matchesSearch && matchesCategory && matchesStatus;

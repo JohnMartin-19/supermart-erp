@@ -60,3 +60,15 @@ class SupplierRetrieveUpdateDestroyAPIView(APIView):
         supplier = self.get_object(pk)
         supplier.delete()
         return Response(status= status.HTTP_204_NO_CONTENT)
+    
+    
+    
+class PurchaseOrderListCreateAPIView(APIView):
+    
+    """
+    GET METHOD: to get all purchase orders from our schema
+    """
+    
+    def get(self, request):
+        purchase_orders = PurchaseOrder.objects.get()
+        serializer = Pu
