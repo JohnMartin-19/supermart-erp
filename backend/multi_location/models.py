@@ -69,7 +69,7 @@ class Branch(models.Model):
     phone_number = models.CharField(max_length=100)
     operating_hours = models.CharField(max_length=100)
     is_active = models.BooleanField(default = True)
-    tenants = models.ForeignKey('tenants.Tenant',on_delete=models.CASCADE)
+    tenant = models.ForeignKey('tenants.Tenant',on_delete=models.CASCADE)
     
     def __str__(self):
         return self.branch_name

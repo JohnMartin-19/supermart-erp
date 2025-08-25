@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -10,23 +10,27 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Progress } from './ui/progress';
-import { Building2, Plus, MapPin, Users, TrendingUp, Package, AlertCircle, Truck } from 'lucide-react';
+import { Building2, Plus, MapPin, Users, TrendingUp, Package, AlertCircle, Truck, Loader2, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface Branch {
-  id: string;
-  name: string;
+  id: number; // API returns number for ID
+  branch_name: string;
   address: string;
   city: string;
   county: string;
-  phone: string;
+  phone_number: string;
   manager: string;
-  status: 'active' | 'inactive' | 'maintenance';
-  employees: number;
-  dailySales: number;
-  monthlySales: number;
-  stockValue: number;
-  lastSync: string;
-  operatingHours: string;
+  is_active: boolean; // API returns boolean
+  operating_hours: string;
+  // The following fields are from your mock data, but not the API.
+  // They are kept for a complete interface, but will be optional.
+  status?: 'active' | 'inactive' | 'maintenance';
+  employees?: number;
+  dailySales?: number;
+  monthlySales?: number;
+  stockValue?: number;
+  lastSync?: string;
 }
 
 interface StockTransfer {
@@ -45,79 +49,17 @@ export function MultiLocationManagement() {
   const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
 
-  // Mock data - would come from Django API
-  const [branches] = useState<Branch[]>([
-    {
-      id: '1',
-      name: 'Main Store - Nairobi CBD',
-      address: 'Kenyatta Avenue, CBD',
-      city: 'Nairobi',
-      county: 'Nairobi',
-      phone: '+254 700 123 456',
-      manager: 'Jane Wanjiku',
-      status: 'active',
-      employees: 25,
-      dailySales: 150000,
-      monthlySales: 4200000,
-      stockValue: 2800000,
-      lastSync: '2024-08-17 14:30',
-      operatingHours: '6:00 AM - 10:00 PM'
-    },
-    {
-      id: '2',
-      name: 'Westlands Branch',
-      address: 'Westlands Mall, 2nd Floor',
-      city: 'Nairobi',
-      county: 'Nairobi',
-      phone: '+254 700 234 567',
-      manager: 'David Kimani',
-      status: 'active',
-      employees: 18,
-      dailySales: 95000,
-      monthlySales: 2700000,
-      stockValue: 1850000,
-      lastSync: '2024-08-17 14:25',
-      operatingHours: '7:00 AM - 9:00 PM'
-    },
-    {
-      id: '3',
-      name: 'Nakuru Branch',
-      address: 'Kenyatta Avenue, Nakuru',
-      city: 'Nakuru',
-      county: 'Nakuru',
-      phone: '+254 700 345 678',
-      manager: 'Mary Njeri',
-      status: 'active',
-      employees: 15,
-      dailySales: 75000,
-      monthlySales: 2100000,
-      stockValue: 1400000,
-      lastSync: '2024-08-17 14:15',
-      operatingHours: '6:30 AM - 9:30 PM'
-    },
-    {
-      id: '4',
-      name: 'Mombasa Road Branch',
-      address: 'Mombasa Road, Industrial Area',
-      city: 'Nairobi',
-      county: 'Nairobi',
-      phone: '+254 700 456 789',
-      manager: 'Peter Ochieng',
-      status: 'maintenance',
-      employees: 12,
-      dailySales: 0,
-      monthlySales: 1800000,
-      stockValue: 950000,
-      lastSync: '2024-08-16 18:30',
-      operatingHours: 'Closed for maintenance'
-    }
-  ]);
+  // State for API data
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Mock data for stock transfers (since your API doesn't have this endpoint yet)
   const [stockTransfers] = useState<StockTransfer[]>([
     {
       id: '1',
-      fromBranch: 'Main Store - Nairobi CBD',
-      toBranch: 'Westlands Branch',
+      fromBranch: 'Main Branch',
+      toBranch: 'Nakuru branch',
       product: 'Rice - 2kg Basmati',
       quantity: 50,
       status: 'pending',
@@ -125,8 +67,8 @@ export function MultiLocationManagement() {
     },
     {
       id: '2',
-      fromBranch: 'Main Store - Nairobi CBD',
-      toBranch: 'Nakuru Branch',
+      fromBranch: 'Nakuru branch',
+      toBranch: 'Nairobi branch',
       product: 'Cooking Oil - 1L',
       quantity: 30,
       status: 'in-transit',
@@ -134,8 +76,8 @@ export function MultiLocationManagement() {
     },
     {
       id: '3',
-      fromBranch: 'Westlands Branch',
-      toBranch: 'Mombasa Road Branch',
+      fromBranch: 'Nairobi branch',
+      toBranch: 'Main Branch',
       product: 'Sugar - 1kg White',
       quantity: 25,
       status: 'completed',
@@ -144,22 +86,44 @@ export function MultiLocationManagement() {
     }
   ]);
 
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/branches/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch branches.');
+        }
+
+        const data = await response.json();
+        setBranches(data);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBranches();
+  }, []);
+
   const filteredBranches = selectedBranch === 'all' 
     ? branches 
-    : branches.filter(branch => branch.id === selectedBranch);
+    : branches.filter(branch => String(branch.id) === selectedBranch);
 
-  const totalSales = branches.reduce((sum, branch) => sum + branch.dailySales, 0);
-  const totalEmployees = branches.reduce((sum, branch) => sum + branch.employees, 0);
-  const totalStockValue = branches.reduce((sum, branch) => sum + branch.stockValue, 0);
-  const activeBranches = branches.filter(branch => branch.status === 'active').length;
+  // Note: These will all be 0 or falsy unless your API returns this data
+  const totalSales = branches.reduce((sum, branch) => sum + (branch.dailySales || 0), 0);
+  const totalEmployees = branches.reduce((sum, branch) => sum + (branch.employees || 0), 0);
+  const totalStockValue = branches.reduce((sum, branch) => sum + (branch.stockValue || 0), 0);
+  const activeBranches = branches.filter(branch => branch.is_active).length;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'secondary';
-      case 'maintenance': return 'destructive';
-      default: return 'secondary';
-    }
+  const getStatusColor = (is_active: boolean) => {
+    return is_active ? 'default' : 'secondary';
   };
 
   const getTransferStatusColor = (status: string) => {
@@ -170,6 +134,29 @@ export function MultiLocationManagement() {
       default: return 'secondary';
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading branches...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -198,8 +185,8 @@ export function MultiLocationManagement() {
                       <SelectValue placeholder="Select source branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.filter(b => b.status === 'active').map(branch => (
-                        <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                      {branches.filter(b => b.is_active).map(branch => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -211,8 +198,8 @@ export function MultiLocationManagement() {
                       <SelectValue placeholder="Select destination branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.filter(b => b.status === 'active').map(branch => (
-                        <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                      {branches.filter(b => b.is_active).map(branch => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -373,7 +360,7 @@ export function MultiLocationManagement() {
               <SelectContent>
                 <SelectItem value="all">All Branches</SelectItem>
                 {branches.map(branch => (
-                  <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                  <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -385,14 +372,14 @@ export function MultiLocationManagement() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-lg">{branch.name}</CardTitle>
+                      <CardTitle className="text-lg">{branch.branch_name}</CardTitle>
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                         <MapPin className="h-3 w-3" />
                         {branch.address}, {branch.city}
                       </p>
                     </div>
-                    <Badge variant={getStatusColor(branch.status)}>
-                      {branch.status.charAt(0).toUpperCase() + branch.status.slice(1)}
+                    <Badge variant={getStatusColor(branch.is_active)}>
+                      {branch.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -404,45 +391,41 @@ export function MultiLocationManagement() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Employees</p>
-                      <p className="font-medium">{branch.employees}</p>
+                      <p className="font-medium">{branch.employees || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Daily Sales</p>
-                      <p className="font-medium">KES {branch.dailySales.toLocaleString()}</p>
+                      <p className="font-medium">KES {(branch.dailySales || 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Monthly Sales</p>
-                      <p className="font-medium">KES {(branch.monthlySales / 1000000).toFixed(1)}M</p>
+                      <p className="font-medium">KES {((branch.monthlySales || 0) / 1000000).toFixed(1)}M</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm">Stock Value</span>
-                      <span className="text-sm font-medium">KES {(branch.stockValue / 1000000).toFixed(1)}M</span>
+                      <span className="text-sm font-medium">KES {((branch.stockValue || 0) / 1000000).toFixed(1)}M</span>
                     </div>
-                    <Progress value={(branch.stockValue / 3000000) * 100} className="h-2" />
+                    <Progress value={((branch.stockValue || 0) / 3000000) * 100} className="h-2" />
                   </div>
 
                   <div className="pt-2 border-t space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Operating Hours:</span>
-                      <span>{branch.operatingHours}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Last Sync:</span>
-                      <span>{branch.lastSync}</span>
+                      <span>{branch.operating_hours}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Phone:</span>
-                      <span>{branch.phone}</span>
+                      <span>{branch.phone_number}</span>
                     </div>
                   </div>
 
-                  {branch.status === 'maintenance' && (
+                  {branch.is_active === false && (
                     <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-lg">
                       <AlertCircle className="h-4 w-4 text-destructive" />
-                      <span className="text-sm text-destructive">Branch under maintenance</span>
+                      <span className="text-sm text-destructive">Branch is inactive</span>
                     </div>
                   )}
                 </CardContent>
@@ -509,10 +492,10 @@ export function MultiLocationManagement() {
                   {branches.map((branch) => (
                     <div key={branch.id} className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm font-medium">{branch.name}</span>
-                        <span className="text-sm">KES {branch.dailySales.toLocaleString()}</span>
+                        <span className="text-sm font-medium">{branch.branch_name}</span>
+                        <span className="text-sm">KES {(branch.dailySales || 0).toLocaleString()}</span>
                       </div>
-                      <Progress value={(branch.dailySales / 150000) * 100} className="h-2" />
+                      <Progress value={((branch.dailySales || 0) / 150000) * 100} className="h-2" />
                     </div>
                   ))}
                 </div>
@@ -528,10 +511,10 @@ export function MultiLocationManagement() {
                   {branches.map((branch) => (
                     <div key={branch.id} className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm font-medium">{branch.name}</span>
-                        <span className="text-sm">{branch.employees} employees</span>
+                        <span className="text-sm font-medium">{branch.branch_name}</span>
+                        <span className="text-sm">{branch.employees || 0} employees</span>
                       </div>
-                      <Progress value={(branch.employees / 25) * 100} className="h-2" />
+                      <Progress value={((branch.employees || 0) / 25) * 100} className="h-2" />
                     </div>
                   ))}
                 </div>

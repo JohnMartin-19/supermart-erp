@@ -25,7 +25,7 @@ class BranchListCreateAPIView(APIView):
     def post(self,request):
         serializer = BranchSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.error)
     
@@ -79,7 +79,7 @@ class StockTransferListCreateAPIView(APIView):
     """  
     def get(self, request):
         stock_transfers = StockTransfer.objects.all()
-        serializer = StockTransferSerializer(stock_transfers)
+        serializer = StockTransferSerializer(stock_transfers, many= True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     """
@@ -88,7 +88,7 @@ class StockTransferListCreateAPIView(APIView):
     def post(self,request):
         serializer = StockTransferSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status=status.HHTP_201_CREATED)
         return Response(serializer.error)
     
