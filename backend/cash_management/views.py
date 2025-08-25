@@ -78,7 +78,7 @@ class CashReconciliationListCreateAPIView(APIView):
     
     def get(self, request):
         cash_reconciliations = CashReconciliation.objects.all()
-        serializer = CashReconciliationSerializer(cash_reconciliations)
+        serializer = CashReconciliationSerializer(cash_reconciliations,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     """
@@ -88,9 +88,9 @@ class CashReconciliationListCreateAPIView(APIView):
     def post(self, request):
         serializer = CashReconciliationSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response("Failed to create a cash reconciliation", status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class CashReconciliationRetrieveUpdateDestroyAPIView(APIView):
     
@@ -148,7 +148,7 @@ class CashExpenseListCreateAPIView(APIView):
     
     def get(elf, request):
         cash_expense = CashExpense.objects.all()
-        serializer = CashExpenseSerializer(cash_expense)
+        serializer = CashExpenseSerializer(cash_expense,many =True)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
@@ -158,9 +158,9 @@ class CashExpenseListCreateAPIView(APIView):
     def post(self, request):
         serializer = CashExpenseSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.error,status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
 class CashExpenseRetrieveUpdateDestroyAPIView(APIView):
     
@@ -181,7 +181,7 @@ class CashExpenseRetrieveUpdateDestroyAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     """
     DELETE METHOD:To delete a particular cash expense

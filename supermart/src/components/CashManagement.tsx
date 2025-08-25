@@ -11,6 +11,7 @@ import { Textarea } from './ui/textarea';
 import { Banknote, CreditCard, TrendingUp, TrendingDown, Plus, Calendar, Building2, Eye, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
+// Interface for a cash transaction, used for both sales and expenses
 interface CashTransaction {
   id: string;
   type: 'sale' | 'expense' | 'deposit' | 'withdrawal';
@@ -18,7 +19,7 @@ interface CashTransaction {
   description: string;
   branch: string;
   cashier: string;
-  timestamp: string;
+  recorded_at: string;
   paymentMethod: 'cash' | 'mpesa' | 'card';
 }
 
@@ -35,31 +36,44 @@ interface CashDrawer {
   closed_at?: string;
 }
 
+// Interface for the fetched expense data
+interface ExpenseData {
+  id: string;
+  branch: number; // Assuming branch is an ID
+  cash_drawer: number;
+  amount: string;
+  description: string;
+  recorded_at: string;
+  tenant: number;
+}
+
+
 export function CashManagement() {
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedDate, setSelectedDate] = useState('today');
   const [isReconcileOpen, setIsReconcileOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
 
-  // States for fetching cash drawers
+  // States for fetched data
   const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
+  const [cashExpenses, setCashExpenses] = useState<ExpenseData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // States for the Record Expense form
-  const [newExpense, setNewExpense] = useState({ branch: '', amount: 0, description: '' });
+  const [newExpense, setNewExpense] = useState({ cash_drawer_id: '', amount: 0, description: '' });
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [expenseError, setExpenseError] = useState<string | null>(null);
   const [expenseSuccess, setExpenseSuccess] = useState(false);
 
   // States for the Reconcile form
-  const [reconciliation, setReconciliation] = useState({ branch: '', actual_count: 0, notes: '' });
+  const [reconciliation, setReconciliation] = useState({ cash_drawer_id: '', actual_count: 0, notes: '' });
   const [isReconciling, setIsReconciling] = useState(false);
   const [reconciliationError, setReconciliationError] = useState<string | null>(null);
   const [reconciliationSuccess, setReconciliationSuccess] = useState(false);
 
-  // Mock data for transactions as no API endpoint was provided
-  const [transactions] = useState<CashTransaction[]>([
+  // Mock sales data to be displayed alongside real expenses
+  const [salesTransactions] = useState<CashTransaction[]>([
     {
       id: '1',
       type: 'sale',
@@ -67,7 +81,7 @@ export function CashManagement() {
       description: 'Customer purchase - Receipt #R001',
       branch: 'Main Store - Nairobi CBD',
       cashier: 'Alice Wanjiku',
-      timestamp: '2024-08-17 14:30:00',
+      recorded_at: '2025-08-26T09:30:00Z',
       paymentMethod: 'cash'
     },
     {
@@ -77,38 +91,63 @@ export function CashManagement() {
       description: 'Customer purchase - Receipt #R002',
       branch: 'Main Store - Nairobi CBD',
       cashier: 'Alice Wanjiku',
-      timestamp: '2024-08-17 14:25:00',
+      recorded_at: '2025-08-26T09:25:00Z',
       paymentMethod: 'mpesa'
     },
   ]);
 
+  // Combined transactions for display
+  const allTransactions: CashTransaction[] = [
+    ...salesTransactions,
+    ...cashExpenses.map(exp => ({
+      id: exp.id,
+      type: 'expense' as 'expense',
+      amount: parseFloat(exp.amount),
+      description: exp.description,
+      branch: cashDrawers.find(d => d.id === String(exp.cash_drawer))?.branch || `Branch ${exp.branch}`,
+      cashier: cashDrawers.find(d => d.id === String(exp.cash_drawer))?.cashier || 'N/A',
+      recorded_at: exp.recorded_at,
+      paymentMethod: 'cash' as 'cash',
+    }))
+  ].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
+
   const branches = ['all', ...Array.from(new Set(cashDrawers.map(d => d.branch)))];
 
-  // Fetch cash drawers on component mount
+  // Fetch all required data on component mount
   useEffect(() => {
-    const fetchCashDrawers = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_drawers/', {
+        const drawersResponse = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_drawers/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+        const expensesResponse = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_expenses/', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           },
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Failed to fetch cash drawers.');
+        if (!drawersResponse.ok || !expensesResponse.ok) {
+          const drawersError = !drawersResponse.ok ? await drawersResponse.json() : null;
+          const expensesError = !expensesResponse.ok ? await expensesResponse.json() : null;
+          throw new Error(drawersError?.detail || expensesError?.detail || 'Failed to fetch data.');
         }
+
+        const drawersData = await drawersResponse.json();
+        const expensesData = await expensesResponse.json();
         
-        const data = await response.json();
-        setCashDrawers(data);
+        setCashDrawers(drawersData);
+        setCashExpenses(expensesData);
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
       } finally {
         setIsLoading(false);
       }
     };
-    fetchCashDrawers();
+    fetchData();
   }, []);
 
   // Handlers for form submissions
@@ -120,10 +159,9 @@ export function CashManagement() {
 
     try {
       const payload = {
+        cash_drawer: newExpense.cash_drawer_id,
         amount: newExpense.amount,
         description: newExpense.description,
-        branch: newExpense.branch,
-        // Assuming cashier info comes from the backend or context
       };
 
       const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_expenses/', {
@@ -141,10 +179,9 @@ export function CashManagement() {
       }
       
       setExpenseSuccess(true);
-      setNewExpense({ branch: '', amount: 0, description: '' });
+      setNewExpense({ cash_drawer_id: '', amount: 0, description: '' });
 
       // Refresh data after successful addition
-      // Note: A more efficient approach would be to update the state directly
       setTimeout(() => {
         window.location.reload(); 
       }, 1000);
@@ -164,10 +201,9 @@ export function CashManagement() {
 
     try {
       const payload = {
-        branch: reconciliation.branch,
-        actual_count: reconciliation.actual_count,
+        cash_drawer: reconciliation.cash_drawer_id,
+        actual_cash_count: reconciliation.actual_count,
         notes: reconciliation.notes,
-        // Assuming cashier info comes from the backend or context
       };
 
       const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_reconciliations/', {
@@ -185,10 +221,9 @@ export function CashManagement() {
       }
 
       setReconciliationSuccess(true);
-      setReconciliation({ branch: '', actual_count: 0, notes: '' });
+      setReconciliation({ cash_drawer_id: '', actual_count: 0, notes: '' });
 
       // Refresh data after successful reconciliation
-      // Note: A more efficient approach would be to update the state directly
       setTimeout(() => {
         window.location.reload(); 
       }, 1000);
@@ -205,13 +240,28 @@ export function CashManagement() {
     : cashDrawers.filter(drawer => drawer.branch === selectedBranch);
 
   const filteredTransactions = selectedBranch === 'all'
-    ? transactions
-    : transactions.filter(transaction => transaction.branch === selectedBranch);
+    ? allTransactions
+    : allTransactions.filter(transaction => transaction.branch === selectedBranch);
 
-  const totalCash = cashDrawers.reduce((sum, drawer) => sum + (drawer.current_balance || 0), 0);
-  const totalSales = cashDrawers.reduce((sum, drawer) => sum + (drawer.total_sales || 0), 0);
-  const totalExpenses = cashDrawers.reduce((sum, drawer) => sum + (drawer.total_expenses || 0), 0);
+  const totalCash = cashDrawers.reduce((sum, drawer) => sum + (drawer.current_balance ?? 0), 0);
+  const totalSales = salesTransactions.reduce((sum, sale) => sum + sale.amount, 0);
+
+  // Calculate total expenses for the day
+  const today = new Date().toLocaleDateString();
+  const todayExpenses = cashExpenses
+    .filter(exp => new Date(exp.recorded_at).toLocaleDateString() === today)
+    .reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+
   const openDrawers = cashDrawers.filter(drawer => drawer.status === 'open').length;
+
+  // Calculate total expenses per branch
+  const totalExpensesByBranch = cashExpenses.reduce((map, exp) => {
+    const branchName = cashDrawers.find(d => d.id === String(exp.cash_drawer))?.branch || `Branch ${exp.branch}`;
+    const currentTotal = map.get(branchName) || 0;
+    map.set(branchName, currentTotal + parseFloat(exp.amount));
+    return map;
+  }, new Map());
+
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -287,27 +337,32 @@ export function CashManagement() {
               <form onSubmit={handleAddExpense}>
                 <div className="grid grid-cols-1 gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="branch-expense">Branch</Label>
+                    <Label htmlFor="cash-drawer-expense">Cash Drawer</Label>
                     <Select
-                      value={newExpense.branch}
-                      onValueChange={(value) => setNewExpense({ ...newExpense, branch: value })}
+                      value={newExpense.cash_drawer_id}
+                      onValueChange={(value) => setNewExpense({ ...newExpense, cash_drawer_id: value })}
                     >
-                      <SelectTrigger id="branch-expense">
-                        <SelectValue placeholder="Select branch" />
+                      <SelectTrigger id="cash-drawer-expense">
+                        <SelectValue placeholder="Select an open cash drawer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {branches.slice(1).map(branch => (
-                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                        ))}
+                        {/* Filter to show only currently open cash drawers */}
+                        {cashDrawers
+                          .filter(drawer => drawer.status === 'open')
+                          .map(drawer => (
+                            <SelectItem key={drawer.id} value={drawer.id}>
+                              {drawer.branch} - {drawer.cashier}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="amount-expense">Amount (KES)</Label>
-                    <Input 
-                      id="amount-expense" 
-                      type="number" 
-                      placeholder="0.00" 
+                    <Input
+                      id="amount-expense"
+                      type="number"
+                      placeholder="0.00"
                       value={newExpense.amount}
                       onChange={(e) => setNewExpense({ ...newExpense, amount: Number(e.target.value) })}
                       required
@@ -315,8 +370,8 @@ export function CashManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description-expense">Description</Label>
-                    <Textarea 
-                      id="description-expense" 
+                    <Textarea
+                      id="description-expense"
                       placeholder="What was this expense for?"
                       value={newExpense.description}
                       onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
@@ -368,27 +423,31 @@ export function CashManagement() {
               <form onSubmit={handleReconciliation}>
                 <div className="grid grid-cols-1 gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="branch-reconcile">Branch</Label>
+                    <Label htmlFor="branch-reconcile">Cash Drawer</Label>
                     <Select
-                      value={reconciliation.branch}
-                      onValueChange={(value) => setReconciliation({ ...reconciliation, branch: value })}
+                      value={reconciliation.cash_drawer_id}
+                      onValueChange={(value) => setReconciliation({ ...reconciliation, cash_drawer_id: value })}
                     >
                       <SelectTrigger id="branch-reconcile">
-                        <SelectValue placeholder="Select branch" />
+                        <SelectValue placeholder="Select an open cash drawer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {branches.slice(1).map(branch => (
-                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                        ))}
+                        {cashDrawers
+                          .filter(drawer => drawer.status === 'open')
+                          .map(drawer => (
+                            <SelectItem key={drawer.id} value={drawer.id}>
+                              {drawer.branch} - {drawer.cashier}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="count-reconcile">Actual Cash Count (KES)</Label>
-                    <Input 
-                      id="count-reconcile" 
-                      type="number" 
-                      placeholder="0.00" 
+                    <Input
+                      id="count-reconcile"
+                      type="number"
+                      placeholder="0.00"
                       value={reconciliation.actual_count}
                       onChange={(e) => setReconciliation({ ...reconciliation, actual_count: Number(e.target.value) })}
                       required
@@ -396,8 +455,8 @@ export function CashManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="notes-reconcile">Notes</Label>
-                    <Textarea 
-                      id="notes-reconcile" 
+                    <Textarea
+                      id="notes-reconcile"
                       placeholder="Any discrepancies or notes"
                       value={reconciliation.notes}
                       onChange={(e) => setReconciliation({ ...reconciliation, notes: e.target.value })}
@@ -436,14 +495,13 @@ export function CashManagement() {
         </div>
       </div>
 
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Cash</p>
-                <p className="text-2xl">KES {totalCash.toLocaleString()}</p>
+                <p className="text-2xl">KES {(totalCash ?? 0).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">In all drawers</p>
               </div>
               <Banknote className="h-8 w-8 text-muted-foreground" />
@@ -456,7 +514,7 @@ export function CashManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Daily Sales</p>
-                <p className="text-2xl">KES {totalSales.toLocaleString()}</p>
+                <p className="text-2xl">KES {(totalSales ?? 0).toLocaleString()}</p>
                 <p className="text-sm text-green-600">Today's revenue</p>
               </div>
               <TrendingUp className="h-8 w-8 text-muted-foreground" />
@@ -469,7 +527,7 @@ export function CashManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Daily Expenses</p>
-                <p className="text-2xl">KES {totalExpenses.toLocaleString()}</p>
+                <p className="text-2xl">KES {(todayExpenses ?? 0).toLocaleString()}</p>
                 <p className="text-sm text-red-600">Today's costs</p>
               </div>
               <TrendingDown className="h-8 w-8 text-muted-foreground" />
@@ -534,19 +592,19 @@ export function CashManagement() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Opening Balance</p>
-                      <p className="font-semibold">KES {drawer.opening_balance.toLocaleString()}</p>
+                      <p className="font-semibold">KES {(drawer.opening_balance ?? 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Current Balance</p>
-                      <p className="font-semibold">KES {drawer.current_balance.toLocaleString()}</p>
+                      <p className="font-semibold">KES {(drawer.current_balance ?? 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sales</p>
-                      <p className="font-semibold text-green-600">KES {drawer.total_sales.toLocaleString()}</p>
+                      <p className="font-semibold text-green-600">KES {(drawer.total_sales ?? 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Expenses</p>
-                      <p className="font-semibold text-red-600">KES {drawer.total_expenses.toLocaleString()}</p>
+                      <p className="font-semibold text-red-600">KES {(drawer.total_expenses ?? 0).toLocaleString()}</p>
                     </div>
                   </div>
 
@@ -633,7 +691,7 @@ export function CashManagement() {
                         KES {transaction.amount.toLocaleString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(transaction.timestamp).toLocaleString()}
+                        {new Date(transaction.recorded_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -647,31 +705,16 @@ export function CashManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Payment Method Breakdown</CardTitle>
+                <CardTitle>Total Expenses by Branch</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <Banknote className="h-4 w-4" />
-                      <span>Cash</span>
+                  {Array.from(totalExpensesByBranch).map(([branch, total]) => (
+                    <div key={branch} className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{branch}</span>
+                      <span className="font-medium text-red-600">KES {total.toLocaleString()}</span>
                     </div>
-                    <span className="font-medium">65%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      <span>M-Pesa</span>
-                    </div>
-                    <span className="font-medium">25%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      <span>Card</span>
-                    </div>
-                    <span className="font-medium">10%</span>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -688,12 +731,12 @@ export function CashManagement() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Cash Out:</span>
-                    <span className="font-medium text-red-600">KES {totalExpenses.toLocaleString()}</span>
+                    <span className="font-medium text-red-600">KES {todayExpenses.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t">
                     <span className="font-medium">Net Cash Flow:</span>
                     <span className="font-semibold text-green-600">
-                      KES {(totalSales - totalExpenses).toLocaleString()}
+                      KES {(totalSales - todayExpenses).toLocaleString()}
                     </span>
                   </div>
                 </div>

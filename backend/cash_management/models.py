@@ -10,8 +10,8 @@ STATUS_CHOICES = [
 class CashDrawer(models.Model):
     branch = models.ForeignKey('multi_location.Branch', on_delete=models.CASCADE)
     cashier = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='cash_drawers')
-    opening_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    current_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    opening_balance = models.IntegerField()
+    current_balance = models.IntegerField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
     opened_at = models.DateTimeField(auto_now_add=True)
     closed_at = models.DateTimeField(null=True, blank=True)
