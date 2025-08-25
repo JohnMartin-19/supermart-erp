@@ -5,43 +5,45 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Progress } from './ui/progress';
-import { Building2, Plus, MapPin, Users, TrendingUp, Package, AlertCircle, Truck, Loader2, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, MapPin, Users, TrendingUp, Package, AlertCircle, Truck, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
+// --- Interface Declarations ---
 interface Branch {
-  id: number; // API returns number for ID
+  id: number;
   branch_name: string;
   address: string;
   city: string;
   county: string;
   phone_number: string;
   manager: string;
-  is_active: boolean; // API returns boolean
+  is_active: boolean;
   operating_hours: string;
-  // The following fields are from your mock data, but not the API.
-  // They are kept for a complete interface, but will be optional.
-  status?: 'active' | 'inactive' | 'maintenance';
   employees?: number;
   dailySales?: number;
   monthlySales?: number;
   stockValue?: number;
-  lastSync?: string;
 }
 
 interface StockTransfer {
-  id: string;
-  fromBranch: string;
-  toBranch: string;
-  product: string;
+  id: number;
+  from_branch: number;
+  to_branch: number;
+  product: number;
   quantity: number;
-  status: 'pending' | 'in-transit' | 'completed';
-  requestDate: string;
-  completedDate?: string;
+  status: 'pending' | 'in-transit' | 'completed' | 'cancelled';
+  request_date: string;
+  completed_date?: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
 }
 
 export function MultiLocationManagement() {
@@ -51,40 +53,58 @@ export function MultiLocationManagement() {
 
   // State for API data
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [stockTransfers, setStockTransfers] = useState<StockTransfer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  // Mock data for stock transfers (since your API doesn't have this endpoint yet)
-  const [stockTransfers] = useState<StockTransfer[]>([
-    {
-      id: '1',
-      fromBranch: 'Main Branch',
-      toBranch: 'Nakuru branch',
-      product: 'Rice - 2kg Basmati',
-      quantity: 50,
-      status: 'pending',
-      requestDate: '2024-08-17',
-    },
-    {
-      id: '2',
-      fromBranch: 'Nakuru branch',
-      toBranch: 'Nairobi branch',
-      product: 'Cooking Oil - 1L',
-      quantity: 30,
-      status: 'in-transit',
-      requestDate: '2024-08-16',
-    },
-    {
-      id: '3',
-      fromBranch: 'Nairobi branch',
-      toBranch: 'Main Branch',
-      product: 'Sugar - 1kg White',
-      quantity: 25,
-      status: 'completed',
-      requestDate: '2024-08-15',
-      completedDate: '2024-08-16'
-    }
-  ]);
+  // Loading and error states
+  const [isLoadingBranches, setIsLoadingBranches] = useState(true);
+  const [loadingBranchesError, setLoadingBranchesError] = useState<string | null>(null);
+  const [isLoadingTransfers, setIsLoadingTransfers] = useState(true);
+  const [loadingTransfersError, setLoadingTransfersError] = useState<string | null>(null);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [loadingProductsError, setLoadingProductsError] = useState<string | null>(null);
+
+  // New state for the stock transfer form
+  const [newTransfer, setNewTransfer] = useState({
+    from_branch: '',
+    to_branch: '',
+    product_id: '',
+    quantity: 0,
+    reason: '',
+  });
+
+  // State for the new branch form
+  const [newBranch, setNewBranch] = useState({
+    branch_name: '',
+    address: '',
+    city: '',
+    county: '',
+    phone_number: '',
+    manager: '',
+    is_active: true,
+    operating_hours: '',
+  });
+
+  const BRANCH_COUNTIES = [
+    'Mombasa', 'Kwale', 'Kilifi', 'Tana River', 'Lamu', 'Taita-Taveta',
+    'Garissa', 'Wajir', 'Mandera', 'Marsabit', 'Isiolo', 'Meru',
+    'Tharaka-Nithi', 'Embu', 'Kitui', 'Machakos', 'Makueni', 'Nyandarua',
+    'Nyeri', 'Kirinyaga', "Murang'a", 'Kiambu', 'Turkana', 'West Pokot',
+    'Samburu', 'Trans-Nzoia', 'Uasin Gishu', 'Elgeyo-Marakwet', 'Nandi',
+    'Baringo', 'Laikipia', 'Nakuru', 'Narok', 'Kajiado', 'Kericho',
+    'Bomet', 'Kakamega', 'Vihiga', 'Bungoma', 'Busia', 'Siaya', 'Kisumu',
+    'Homa Bay', 'Migori', 'Kisii', 'Nyamira', 'Nairobi'
+  ];
+
+  const [isCreatingTransfer, setIsCreatingTransfer] = useState(false);
+  const [createTransferError, setCreateTransferError] = useState<string | null>(null);
+  const [createTransferSuccess, setCreateTransferSuccess] = useState(false);
+
+  const [isCreatingBranch, setIsCreatingBranch] = useState(false);
+  const [createBranchError, setCreateBranchError] = useState<string | null>(null);
+  const [createBranchSuccess, setCreateBranchSuccess] = useState(false);
+
+  // --- Data Fetching Hooks ---
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -95,28 +115,195 @@ export function MultiLocationManagement() {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           },
         });
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.detail || 'Failed to fetch branches.');
         }
-
         const data = await response.json();
         setBranches(data);
       } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred.');
+        setLoadingBranchesError(err.message || 'An unexpected error occurred.');
       } finally {
-        setIsLoading(false);
+        setIsLoadingBranches(false);
       }
     };
     fetchBranches();
   }, []);
 
+  useEffect(() => {
+    const fetchStockTransfers = async () => {
+      try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/stock_transfers/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch stock transfers.');
+        }
+        const data = await response.json();
+        setStockTransfers(data);
+      } catch (err: any) {
+        setLoadingTransfersError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoadingTransfers(false);
+      }
+    };
+    fetchStockTransfers();
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch products.');
+        }
+        const data = await response.json();
+        setProducts(data);
+      } catch (err: any) {
+        setLoadingProductsError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // --- Form Handling and Helper Functions ---
+
+  const handleCreateTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingTransfer(true);
+    setCreateTransferError(null);
+    setCreateTransferSuccess(false);
+
+    if (!newTransfer.from_branch || !newTransfer.to_branch || !newTransfer.product_id || newTransfer.quantity <= 0) {
+      setCreateTransferError('Please fill in all required fields.');
+      setIsCreatingTransfer(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        from_branch: Number(newTransfer.from_branch),
+        to_branch: Number(newTransfer.to_branch),
+        product: Number(newTransfer.product_id),
+        quantity: Number(newTransfer.quantity),
+        notes: newTransfer.reason,
+      };
+
+      const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/stock_transfers/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok || response.status === 201) {
+        const createdTransfer: StockTransfer = await response.json();
+        setStockTransfers(prevTransfers => [createdTransfer, ...prevTransfers]);
+        setCreateTransferSuccess(true);
+        
+        setNewTransfer({
+          from_branch: '',
+          to_branch: '',
+          product_id: '',
+          quantity: 0,
+          reason: '',
+        });
+
+        setTimeout(() => {
+          setIsTransferOpen(false);
+        }, 1500);
+
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to create stock transfer.');
+      }
+
+    } catch (err: any) {
+      setCreateTransferError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsCreatingTransfer(false);
+    }
+  };
+
+  const handleCreateBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingBranch(true);
+    setCreateBranchError(null);
+    setCreateBranchSuccess(false);
+
+    if (!newBranch.branch_name || !newBranch.manager || !newBranch.address || !newBranch.city || !newBranch.county || !newBranch.phone_number || !newBranch.operating_hours) {
+        setCreateBranchError('Please fill in all required fields.');
+        setIsCreatingBranch(false);
+        return;
+    }
+
+    try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/branches/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+            body: JSON.stringify(newBranch),
+        });
+
+        if (response.ok || response.status === 201) {
+            const createdBranch: Branch = await response.json();
+            setBranches(prevBranches => [...prevBranches, createdBranch]);
+            setCreateBranchSuccess(true);
+            setNewBranch({
+                branch_name: '',
+                address: '',
+                city: '',
+                county: '',
+                phone_number: '',
+                manager: '',
+                is_active: true,
+                operating_hours: '',
+            });
+
+            setTimeout(() => {
+                setIsAddBranchOpen(false);
+            }, 1500);
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to create branch.');
+        }
+    } catch (err: any) {
+        setCreateBranchError(err.message || 'An unexpected error occurred.');
+    } finally {
+        setIsCreatingBranch(false);
+    }
+  };
+
+  const getBranchName = (id: number) => {
+    const branch = branches.find(b => b.id === id);
+    return branch ? branch.branch_name : 'Unknown Branch';
+  };
+  
+  const getProductName = (id: number) => {
+    const product = products.find(p => p.id === id);
+    return product ? product.name : 'Unknown Product';
+  };
+
   const filteredBranches = selectedBranch === 'all' 
     ? branches 
     : branches.filter(branch => String(branch.id) === selectedBranch);
 
-  // Note: These will all be 0 or falsy unless your API returns this data
   const totalSales = branches.reduce((sum, branch) => sum + (branch.dailySales || 0), 0);
   const totalEmployees = branches.reduce((sum, branch) => sum + (branch.employees || 0), 0);
   const totalStockValue = branches.reduce((sum, branch) => sum + (branch.stockValue || 0), 0);
@@ -135,28 +322,29 @@ export function MultiLocationManagement() {
     }
   };
   
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-10 w-10 text-primary animate-spin" />
-          <p className="text-muted-foreground">Loading branches...</p>
+  const renderLoadingOrError = (isLoading: boolean, error: string | null, message: string) => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-[40vh]">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            <p className="text-muted-foreground">{message}</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
+    if (error) {
+      return (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      </div>
-    );
-  }
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -168,7 +356,11 @@ export function MultiLocationManagement() {
         <div className="flex gap-2">
           <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2" onClick={() => {
+                setIsTransferOpen(true);
+                setCreateTransferError(null);
+                setCreateTransferSuccess(false);
+              }}>
                 <Truck className="h-4 w-4" />
                 Stock Transfer
               </Button>
@@ -177,50 +369,105 @@ export function MultiLocationManagement() {
               <DialogHeader>
                 <DialogTitle>Create Stock Transfer</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>From Branch</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select source branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.filter(b => b.is_active).map(branch => (
-                        <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <form onSubmit={handleCreateTransfer}>
+                <div className="grid grid-cols-1 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label>From Branch</Label>
+                    <Select
+                      value={newTransfer.from_branch}
+                      onValueChange={(value) => setNewTransfer({ ...newTransfer, from_branch: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.filter(b => b.is_active).map(branch => (
+                          <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>To Branch</Label>
+                    <Select
+                      value={newTransfer.to_branch}
+                      onValueChange={(value) => setNewTransfer({ ...newTransfer, to_branch: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select destination branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.filter(b => b.is_active).map(branch => (
+                          <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Product</Label>
+                    <Select
+                      value={newTransfer.product_id}
+                      onValueChange={(value) => setNewTransfer({ ...newTransfer, product_id: value })}
+                      disabled={isLoadingProducts}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isLoadingProducts ? "Loading products..." : "Select a product"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map(product => (
+                          <SelectItem key={product.id} value={String(product.id)}>{product.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {loadingProductsError && <p className="text-sm text-red-500 mt-1">{loadingProductsError}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Quantity</Label>
+                    <Input
+                      type="number"
+                      placeholder="Enter quantity"
+                      value={newTransfer.quantity}
+                      onChange={(e) => setNewTransfer({ ...newTransfer, quantity: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Reason</Label>
+                    <Textarea
+                      placeholder="Reason for transfer (optional)"
+                      value={newTransfer.reason}
+                      onChange={(e) => setNewTransfer({ ...newTransfer, reason: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>To Branch</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select destination branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.filter(b => b.is_active).map(branch => (
-                        <SelectItem key={branch.id} value={String(branch.id)}>{branch.branch_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                
+                {isCreatingTransfer && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Creating transfer...</span>
+                  </div>
+                )}
+                {createTransferError && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{createTransferError}</AlertDescription>
+                  </Alert>
+                )}
+                {createTransferSuccess && (
+                  <Alert className="mt-4 border-green-500">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertTitle>Success</AlertTitle>
+                    <AlertDescription>Stock transfer created successfully!</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" type="button" onClick={() => setIsTransferOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isCreatingTransfer}>
+                    {isCreatingTransfer ? 'Creating...' : 'Create Transfer'}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Product</Label>
-                  <Input placeholder="Search product..." />
-                </div>
-                <div className="space-y-2">
-                  <Label>Quantity</Label>
-                  <Input type="number" placeholder="Enter quantity" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Reason</Label>
-                  <Textarea placeholder="Reason for transfer (optional)" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsTransferOpen(false)}>Cancel</Button>
-                <Button>Create Transfer</Button>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
           
@@ -235,55 +482,118 @@ export function MultiLocationManagement() {
               <DialogHeader>
                 <DialogTitle>Add New Branch</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>Branch Name</Label>
-                  <Input placeholder="Enter branch name" />
+              <form onSubmit={handleCreateBranch}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="branch_name">Branch Name</Label>
+                    <Input 
+                        id="branch_name" 
+                        placeholder="Enter branch name" 
+                        value={newBranch.branch_name}
+                        onChange={(e) => setNewBranch({ ...newBranch, branch_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manager">Manager</Label>
+                    <Input 
+                        id="manager" 
+                        placeholder="Branch manager name"
+                        value={newBranch.manager}
+                        onChange={(e) => setNewBranch({ ...newBranch, manager: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-full space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                        id="address" 
+                        placeholder="Full address" 
+                        value={newBranch.address}
+                        onChange={(e) => setNewBranch({ ...newBranch, address: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input 
+                        id="city" 
+                        placeholder="City" 
+                        value={newBranch.city}
+                        onChange={(e) => setNewBranch({ ...newBranch, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="county">County</Label>
+                    <Select
+                        value={newBranch.county}
+                        onValueChange={(value) => setNewBranch({ ...newBranch, county: value })}
+                    >
+                        <SelectTrigger id="county">
+                            <SelectValue placeholder="Select county" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {BRANCH_COUNTIES.map((county) => (
+                                <SelectItem key={county} value={county}>
+                                    {county}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone_number">Phone</Label>
+                    <Input 
+                        id="phone_number" 
+                        placeholder="+254 700 000 000" 
+                        value={newBranch.phone_number}
+                        onChange={(e) => setNewBranch({ ...newBranch, phone_number: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="operating_hours">Operating Hours</Label>
+                    <Input 
+                        id="operating_hours" 
+                        placeholder="e.g., 6:00 AM - 10:00 PM" 
+                        value={newBranch.operating_hours}
+                        onChange={(e) => setNewBranch({ ...newBranch, operating_hours: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                        id="active" 
+                        checked={newBranch.is_active}
+                        onCheckedChange={(checked) => setNewBranch({ ...newBranch, is_active: checked })}
+                    />
+                    <Label htmlFor="active">Active Branch</Label>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Manager</Label>
-                  <Input placeholder="Branch manager name" />
-                </div>
-                <div className="col-span-full space-y-2">
-                  <Label>Address</Label>
-                  <Input placeholder="Full address" />
-                </div>
-                <div className="space-y-2">
-                  <Label>City</Label>
-                  <Input placeholder="City" />
-                </div>
-                <div className="space-y-2">
-                  <Label>County</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select county" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nairobi">Nairobi</SelectItem>
-                      <SelectItem value="mombasa">Mombasa</SelectItem>
-                      <SelectItem value="kisumu">Kisumu</SelectItem>
-                      <SelectItem value="nakuru">Nakuru</SelectItem>
-                      <SelectItem value="eldoret">Uasin Gishu</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input placeholder="+254 700 000 000" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Operating Hours</Label>
-                  <Input placeholder="e.g., 6:00 AM - 10:00 PM" />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch id="active" defaultChecked />
-                  <Label htmlFor="active">Active Branch</Label>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddBranchOpen(false)}>Cancel</Button>
-                <Button>Add Branch</Button>
-              </div>
+
+                {isCreatingBranch && (
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Adding branch...</span>
+                    </div>
+                )}
+                {createBranchError && (
+                    <Alert variant="destructive" className="mt-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>{createBranchError}</AlertDescription>
+                    </Alert>
+                )}
+                {createBranchSuccess && (
+                    <Alert className="mt-4 border-green-500">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <AlertTitle>Success</AlertTitle>
+                        <AlertDescription>Branch added successfully!</AlertDescription>
+                    </Alert>
+                )}
+
+                <DialogFooter className="mt-6">
+                    <Button variant="outline" type="button" onClick={() => setIsAddBranchOpen(false)}>Cancel</Button>
+                    <Button type="submit" disabled={isCreatingBranch}>
+                        {isCreatingBranch ? 'Adding...' : 'Add Branch'}
+                    </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -352,6 +662,8 @@ export function MultiLocationManagement() {
         </TabsList>
 
         <TabsContent value="branches" className="space-y-6">
+          {renderLoadingOrError(isLoadingBranches, loadingBranchesError, 'Loading branches...')}
+          
           <div className="flex items-center gap-4">
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger className="w-64">
@@ -435,6 +747,8 @@ export function MultiLocationManagement() {
         </TabsContent>
 
         <TabsContent value="transfers" className="space-y-6">
+          {renderLoadingOrError(isLoadingTransfers, loadingTransfersError, 'Loading stock transfers...')}
+
           <div className="flex items-center justify-between">
             <h3 className="font-medium">Stock Transfer Requests</h3>
             <Badge variant="outline">{stockTransfers.length} transfers</Badge>
@@ -447,19 +761,19 @@ export function MultiLocationManagement() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{transfer.product}</h4>
+                        <h4 className="font-medium">{getProductName(transfer.product)}</h4>
                         <Badge variant="outline">{transfer.quantity} units</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        From: <span className="font-medium">{transfer.fromBranch}</span>
+                        From: <span className="font-medium">{getBranchName(transfer.from_branch)}</span>
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        To: <span className="font-medium">{transfer.toBranch}</span>
+                        To: <span className="font-medium">{getBranchName(transfer.to_branch)}</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Requested: {new Date(transfer.requestDate).toLocaleDateString()}
-                        {transfer.completedDate && (
-                          <span> • Completed: {new Date(transfer.completedDate).toLocaleDateString()}</span>
+                        Requested: {new Date(transfer.request_date).toLocaleDateString()}
+                        {transfer.completed_date && (
+                          <span> • Completed: {new Date(transfer.completed_date).toLocaleDateString()}</span>
                         )}
                       </p>
                     </div>

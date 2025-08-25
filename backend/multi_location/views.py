@@ -27,7 +27,7 @@ class BranchListCreateAPIView(APIView):
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.error)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     
 class BranchRetrieveUpdateDestroyAPIView(APIView):
@@ -89,8 +89,8 @@ class StockTransferListCreateAPIView(APIView):
         serializer = StockTransferSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
-            return Response(serializer.data, status=status.HHTP_201_CREATED)
-        return Response(serializer.error)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
     
 class StockTransferRetrieveUpdateDestroyAPIView(APIView):
     
@@ -118,7 +118,7 @@ class StockTransferRetrieveUpdateDestroyAPIView(APIView):
         serializer = StockTransferSerializer(stock_transfer, data = request.data, partial = True)
         if serializer.is_valid():
             return Response(serializer.data, status = status.HTTP_200_OK)
-        return Response(serializer.error)
+        return Response(serializer.errors)
     
     """
     DELETE METHOD: To delete a single instance of a stock transfer

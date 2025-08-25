@@ -9,7 +9,7 @@ class BranchSerializer(serializers.ModelSerializer):
         model = Branch
         fields = ['id','branch_name','manager','address','city',
                   'county','phone_number','operating_hours','is_active','tenant']
-        read_only_field = ['tenant']
+        read_only_fields = ['tenant']
         
 class StockTransferSerializer(serializers.ModelSerializer):
     
@@ -17,4 +17,5 @@ class StockTransferSerializer(serializers.ModelSerializer):
         model = StockTransfer
         fields = ['id','from_branch','to_branch','product','quantity','reason',
                   'status','requested_at','approved_at','rejected_at','tenant']
-        read_only_field = ['tenant']
+        read_only_fields = ['tenant','reason',
+                  'status','requested_at','approved_at','rejected_at',]
