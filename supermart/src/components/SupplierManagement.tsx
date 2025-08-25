@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface Supplier {
   id: string;
-  name: string;
+  company_name: string;
   contact_person: string;
   phone_number: string;
   email?: string;
@@ -119,7 +119,7 @@ export function SupplierManagement() {
   const categories = ['all', 'Fresh Produce', 'Dairy Products', 'Grains & Cereals', 'Beverages', 'Household Items'];
 
   const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = supplier.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = supplier.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.contact_person?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.phone_number?.includes(searchQuery);
     const matchesCategory = selectedCategory === 'all' || supplier.category === selectedCategory;
@@ -211,7 +211,7 @@ export function SupplierManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         {suppliers.filter(s => s.status === 'active').map(supplier => (
-                          <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                          <SelectItem key={supplier.id} value={supplier.id}>{supplier.company_name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -414,7 +414,7 @@ export function SupplierManagement() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{supplier.name}</CardTitle>
+                      <CardTitle className="text-lg">{supplier.company_name}</CardTitle>
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                         <MapPin className="h-3 w-3" />
                         {supplier.address ? `${supplier.address}, ${supplier.city}` : 'N/A'}
@@ -567,7 +567,7 @@ export function SupplierManagement() {
                     .map((supplier) => (
                     <div key={supplier.id} className="flex justify-between items-center">
                       <div>
-                        <p className="font-medium">{supplier.name}</p>
+                        <p className="font-medium">{supplier.company_name}</p>
                         <p className="text-sm text-muted-foreground">{supplier.category}</p>
                       </div>
                       <div className="text-right">
@@ -594,7 +594,7 @@ export function SupplierManagement() {
                     .map((supplier) => (
                     <div key={supplier.id} className="flex justify-between items-center">
                       <div>
-                        <p className="font-medium">{supplier.name}</p>
+                        <p className="font-medium">{supplier.company_name}</p>
                         <p className="text-sm text-muted-foreground">{supplier.payment_terms || 'N/A'} terms</p>
                       </div>
                       <p className="font-medium text-orange-600">

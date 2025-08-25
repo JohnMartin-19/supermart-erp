@@ -25,7 +25,9 @@ class Customer(models.Model):
     member_since = models.DateField(auto_now_add=True)
     last_visit = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, blank=True, null=True)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE)
+    
     
     def __str__(self):
         return self.full_name
