@@ -28,6 +28,7 @@ interface Supplier {
   total_orders: number;
   rating: number;
   products: string[];
+  is_active: boolean; // Added is_active to interface based on serializer
 }
 
 interface PurchaseOrder {
@@ -50,7 +51,25 @@ export function SupplierManagement() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // State for the new supplier form
+  const [newSupplier, setNewSupplier] = useState({
+    company_name: '',
+    contact_person: '',
+    phone_number: '',
+    email: '',
+    address: '',
+    city: '',
+    category: '',
+    payment_terms: '',
+    credit_limit: 0,
+  });
 
+  const [isAdding, setIsAdding] = useState(false);
+  const [addSupplierError, setAddSupplierError] = useState<string | null>(null);
+  const [addSupplierSuccess, setAddSupplierSuccess] = useState(false);
+
+  // Hardcoded data for Purchase Orders
   const [purchaseOrders] = useState<PurchaseOrder[]>([
     {
       id: 'PO-001',
@@ -90,44 +109,113 @@ export function SupplierManagement() {
     }
   ]);
 
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
+  const fetchSuppliers = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Failed to fetch suppliers.');
-        }
-
-        const data = await response.json();
-        setSuppliers(data);
-      } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred.');
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch suppliers.');
       }
-    };
+
+      const data = await response.json();
+      setSuppliers(data);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchSuppliers();
   }, []);
 
-  const categories = ['all', 'Fresh Produce', 'Dairy Products', 'Grains & Cereals', 'Beverages', 'Household Items'];
+  const handleAddSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    setAddSupplierError(null);
+    setAddSupplierSuccess(false);
 
+    try {
+      const payload = {
+        ...newSupplier,
+        // The serializer expects a number for credit_limit
+        credit_limit: Number(newSupplier.credit_limit), 
+        // These fields are required by the serializer but not in the form
+        // We can add dummy data for now
+        is_active: true,
+      };
+
+      const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to add supplier.');
+      }
+
+      const addedSupplier: Supplier = await response.json();
+      
+      // Update the local state with the new supplier
+      setSuppliers(prevSuppliers => [...prevSuppliers, addedSupplier]);
+      setAddSupplierSuccess(true);
+
+      // Reset the form and close dialog after a short delay
+      setNewSupplier({
+        company_name: '',
+        contact_person: '',
+        phone_number: '',
+        email: '',
+        address: '',
+        city: '',
+        category: '',
+        payment_terms: '',
+        credit_limit: 0,
+      });
+
+    } catch (err: any) {
+      setAddSupplierError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsAdding(false);
+      setTimeout(() => {
+        setIsAddSupplierOpen(false);
+      }, 1500); // Close dialog after 1.5 seconds
+    }
+  };
+
+  const categories = ['all', 'dairy', 'meat', 'fruits', 'vegetables', 'grains', 'nuts', 'spices',
+    'pasta', 'canned goods', 'baking supplies', 'snacks', 'pet food', 'household items',
+    'beverages', 'personal care', 'baby care', 'pet care', 'office supplies', 'arts and crafts',
+    'books and media', 'sports equipment', 'musical instruments', 'outdoor equipment', 'tools',
+    'furniture', 'home decor', 'garden supplies', 'garage and storage', 'auto parts',
+    'vintage and collectibles', 'other'];
   const filteredSuppliers = suppliers.filter(supplier => {
     const matchesSearch = supplier.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.contact_person?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.phone_number?.includes(searchQuery);
     const matchesCategory = selectedCategory === 'all' || supplier.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'all' || supplier.status === selectedStatus;
+    
+    // Check against the is_active boolean field
+    const matchesStatus = selectedStatus === 'all' || (selectedStatus === 'active' && supplier.is_active) || (selectedStatus === 'inactive' && !supplier.is_active);
+    
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: 'active' | 'inactive' | 'pending') => {
     switch (status) {
       case 'active': return 'default';
       case 'inactive': return 'secondary';
@@ -147,7 +235,6 @@ export function SupplierManagement() {
   };
 
   const getRatingStars = (rating: number) => {
-    // Ensure rating is a valid number before using it
     if (typeof rating !== 'number' || isNaN(rating)) {
         return '';
     }
@@ -155,7 +242,8 @@ export function SupplierManagement() {
   };
 
   const totalSuppliers = suppliers.length;
-  const activeSuppliers = suppliers.filter(s => s.status === 'active').length;
+  // Fix for active suppliers count
+  const activeSuppliers = suppliers.filter(s => s.is_active).length;
   const totalOutstanding = suppliers.reduce((sum, s) => sum + (s.current_balance || 0), 0);
   const pendingOrders = purchaseOrders.filter(po => po.status === 'pending').length;
 
@@ -210,7 +298,7 @@ export function SupplierManagement() {
                         <SelectValue placeholder="Select supplier" />
                       </SelectTrigger>
                       <SelectContent>
-                        {suppliers.filter(s => s.status === 'active').map(supplier => (
+                        {suppliers.filter(s => s.is_active).map(supplier => (
                           <SelectItem key={supplier.id} value={supplier.id}>{supplier.company_name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -235,7 +323,11 @@ export function SupplierManagement() {
           
           <Dialog open={isAddSupplierOpen} onOpenChange={setIsAddSupplierOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2" onClick={() => {
+                setIsAddSupplierOpen(true);
+                setAddSupplierError(null);
+                setAddSupplierSuccess(false);
+              }}>
                 <Plus className="h-4 w-4" />
                 Add Supplier
               </Button>
@@ -244,73 +336,144 @@ export function SupplierManagement() {
               <DialogHeader>
                 <DialogTitle>Add New Supplier</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>Company Name</Label>
-                  <Input placeholder="Supplier company name" />
+              <form onSubmit={handleAddSupplier}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">Company Name</Label>
+                    <Input 
+                      id="company_name" 
+                      placeholder="Supplier company name" 
+                      value={newSupplier.company_name}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, company_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_person">Contact Person</Label>
+                    <Input 
+                      id="contact_person" 
+                      placeholder="Primary contact name" 
+                      value={newSupplier.contact_person}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone_number">Phone</Label>
+                    <Input 
+                      id="phone_number" 
+                      placeholder="+254 700 000 000" 
+                      value={newSupplier.phone_number}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, phone_number: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="contact@supplier.com" 
+                      value={newSupplier.email}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-full space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                      id="address" 
+                      placeholder="Full address" 
+                      value={newSupplier.address}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input 
+                      id="city" 
+                      placeholder="City" 
+                      value={newSupplier.city}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={newSupplier.category}
+                      onValueChange={(value) => setNewSupplier({ ...newSupplier, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.slice(1).map(category => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_terms">Payment Terms</Label>
+                    <Select
+                      value={newSupplier.payment_terms}
+                      onValueChange={(value) => setNewSupplier({ ...newSupplier, payment_terms: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select terms" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">7 days</SelectItem>
+                        <SelectItem value="14">14 days</SelectItem>
+                        <SelectItem value="30">30 days</SelectItem>
+                        <SelectItem value="60">60 days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="credit_limit">Credit Limit (KES)</Label>
+                    <Input 
+                      id="credit_limit" 
+                      type="number" 
+                      placeholder="0" 
+                      value={newSupplier.credit_limit}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, credit_limit: Number(e.target.value) })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Contact Person</Label>
-                  <Input placeholder="Primary contact name" />
+
+                {isAdding && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Adding supplier...</span>
+                  </div>
+                )}
+                {addSupplierError && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{addSupplierError}</AlertDescription>
+                  </Alert>
+                )}
+                {addSupplierSuccess && (
+                  <Alert className="mt-4 border-green-500">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertTitle>Success</AlertTitle>
+                    <AlertDescription>Supplier added successfully!</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" type="button" onClick={() => setIsAddSupplierOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isAdding}>
+                    {isAdding ? 'Adding...' : 'Add Supplier'}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input placeholder="+254 700 000 000" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" placeholder="contact@supplier.com" />
-                </div>
-                <div className="col-span-full space-y-2">
-                  <Label>Address</Label>
-                  <Input placeholder="Full address" />
-                </div>
-                <div className="space-y-2">
-                  <Label>City</Label>
-                  <Input placeholder="City" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.slice(1).map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Payment Terms</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select terms" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">7 days</SelectItem>
-                      <SelectItem value="14">14 days</SelectItem>
-                      <SelectItem value="30">30 days</SelectItem>
-                      <SelectItem value="60">60 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Credit Limit (KES)</Label>
-                  <Input type="number" placeholder="0" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddSupplierOpen(false)}>Cancel</Button>
-                <Button>Add Supplier</Button>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
@@ -403,7 +566,6 @@ export function SupplierManagement() {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -420,8 +582,8 @@ export function SupplierManagement() {
                         {supplier.address ? `${supplier.address}, ${supplier.city}` : 'N/A'}
                       </p>
                     </div>
-                    <Badge variant={getStatusColor(supplier.status)}>
-                      {supplier.status?.charAt(0).toUpperCase() + supplier.status?.slice(1)}
+                    <Badge variant={getStatusColor(supplier.is_active ? 'active' : 'inactive')}>
+                      {supplier.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -562,7 +724,7 @@ export function SupplierManagement() {
               <CardContent>
                 <div className="space-y-4">
                   {suppliers
-                    .sort((a, b) => b.total_orders - a.total_orders)
+                    .sort((a, b) => (b.total_orders || 0) - (a.total_orders || 0))
                     .slice(0, 5)
                     .map((supplier) => (
                     <div key={supplier.id} className="flex justify-between items-center">
