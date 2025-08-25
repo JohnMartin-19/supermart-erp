@@ -32,6 +32,8 @@ class PurchaseOrder(models.Model):
     status = models.CharField(max_length=100,choices=ORDER_STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    product = models.CharField(max_length=100, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1, null=True, blank=True)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE)
 
     def __str__(self):

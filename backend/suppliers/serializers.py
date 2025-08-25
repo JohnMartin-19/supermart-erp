@@ -10,9 +10,9 @@ class SuppliersSerializer(serializers.ModelSerializer):
                   'credit_limit','is_active','tenant','city']
         read_only_fields = ['tenant','is_active']
         
-class PurchaseOrder(serializers.ModelSerializer):
+class PurchaseOrderSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = PurchaseOrder
-        fields = ['id','supplier','delivery_date','notes','status','created_at','updated_at','tenant']
+        fields = ['id','supplier','delivery_date','notes','status','created_at','updated_at','tenant', 'product','quantity']
         read_only_fields = ['tenant']

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Truck, Plus, Search, Phone, MapPin, Package, Calendar, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Truck, Plus, Search, Phone, MapPin, Package, Calendar, AlertTriangle, CheckCircle, Loader2, X, PlusCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface Supplier {
@@ -28,7 +28,7 @@ interface Supplier {
   total_orders: number;
   rating: number;
   products: string[];
-  is_active: boolean; // Added is_active to interface based on serializer
+  is_active: boolean; 
 }
 
 interface PurchaseOrder {
@@ -52,7 +52,6 @@ export function SupplierManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // State for the new supplier form
   const [newSupplier, setNewSupplier] = useState({
     company_name: '',
     contact_person: '',
@@ -69,8 +68,17 @@ export function SupplierManagement() {
   const [addSupplierError, setAddSupplierError] = useState<string | null>(null);
   const [addSupplierSuccess, setAddSupplierSuccess] = useState(false);
 
-  // Hardcoded data for Purchase Orders
-  const [purchaseOrders] = useState<PurchaseOrder[]>([
+  // State for the new purchase order form
+  const [newOrder, setNewOrder] = useState({
+    supplier_id: '',
+    delivery_date: '',
+    items: [{ product: '', quantity: 0, unit_price: 0 }],
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const [createOrderError, setCreateOrderError] = useState<string | null>(null);
+  const [createOrderSuccess, setCreateOrderSuccess] = useState(false);
+
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([
     {
       id: 'PO-001',
       supplier: 'Fresh Produce Supplies Ltd',
@@ -110,8 +118,6 @@ export function SupplierManagement() {
   ]);
 
   const fetchSuppliers = async () => {
-    setIsLoading(true);
-    setError(null);
     try {
       const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
         headers: {
@@ -147,10 +153,7 @@ export function SupplierManagement() {
     try {
       const payload = {
         ...newSupplier,
-        // The serializer expects a number for credit_limit
         credit_limit: Number(newSupplier.credit_limit), 
-        // These fields are required by the serializer but not in the form
-        // We can add dummy data for now
         is_active: true,
       };
 
@@ -170,11 +173,9 @@ export function SupplierManagement() {
 
       const addedSupplier: Supplier = await response.json();
       
-      // Update the local state with the new supplier
       setSuppliers(prevSuppliers => [...prevSuppliers, addedSupplier]);
       setAddSupplierSuccess(true);
 
-      // Reset the form and close dialog after a short delay
       setNewSupplier({
         company_name: '',
         contact_person: '',
@@ -193,33 +194,112 @@ export function SupplierManagement() {
       setIsAdding(false);
       setTimeout(() => {
         setIsAddSupplierOpen(false);
-      }, 1500); 
+      }, 1500);
     }
   };
+  
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    setCreateOrderError(null);
+    setCreateOrderSuccess(false);
 
-  const categories = ['all', 'dairy', 'meat', 'fruits', 'vegetables', 'grains', 'nuts', 'spices',
-    'pasta', 'canned goods', 'baking supplies', 'snacks', 'pet food', 'household items',
-    'beverages', 'personal care', 'baby care', 'pet care', 'office supplies', 'arts and crafts',
-    'books and media', 'sports equipment', 'musical instruments', 'outdoor equipment', 'tools',
-    'furniture', 'home decor', 'garden supplies', 'garage and storage', 'auto parts',
-    'vintage and collectibles', 'other'];
+    // Filter out empty items
+    const validItems = newOrder.items.filter(item => item.product && item.quantity > 0 && item.unit_price > 0);
+
+    if (!newOrder.supplier_id || !newOrder.delivery_date || validItems.length === 0) {
+      setCreateOrderError('Please fill in all required fields and add at least one item.');
+      setIsCreating(false);
+      return;
+    }
+
+    // Calculate total amount
+    const totalAmount = validItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+
+    try {
+      const payload = {
+        supplier: newOrder.supplier_id,
+        delivery_date: newOrder.delivery_date,
+        total_amount: totalAmount,
+        items: validItems,
+      };
+
+      const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/purchase_orders/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to create purchase order.');
+      }
+
+      const createdOrder: PurchaseOrder = await response.json();
+      
+      // Add the newly created order to the state
+      const supplierName = suppliers.find(s => s.id === createdOrder.supplier)?.company_name || 'Unknown Supplier';
+      setPurchaseOrders(prevOrders => [...prevOrders, { ...createdOrder, supplier: supplierName }]);
+      setCreateOrderSuccess(true);
+      
+      // Reset the form
+      setNewOrder({
+        supplier_id: '',
+        delivery_date: '',
+        items: [{ product: '', quantity: 0, unit_price: 0 }],
+      });
+
+    } catch (err: any) {
+      setCreateOrderError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsCreating(false);
+      setTimeout(() => {
+        setIsCreateOrderOpen(false);
+      }, 1500);
+    }
+  };
+  
+  const handleAddItem = () => {
+    setNewOrder({
+      ...newOrder,
+      items: [...newOrder.items, { product: '', quantity: 0, unit_price: 0 }],
+    });
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setNewOrder({
+      ...newOrder,
+      items: newOrder.items.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleItemChange = (index: number, field: keyof typeof newOrder.items[0], value: string | number) => {
+    const updatedItems = newOrder.items.map((item, i) =>
+      i === index ? { ...item, [field]: value } : item
+    );
+    setNewOrder({ ...newOrder, items: updatedItems });
+  };
+
+  const categories = ['all', 'Fresh Produce', 'Dairy Products', 'Grains & Cereals', 'Beverages', 'Household Items'];
+
   const filteredSuppliers = suppliers.filter(supplier => {
     const matchesSearch = supplier.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.contact_person?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.phone_number?.includes(searchQuery);
     const matchesCategory = selectedCategory === 'all' || supplier.category === selectedCategory;
     
-   
     const matchesStatus = selectedStatus === 'all' || (selectedStatus === 'active' && supplier.is_active) || (selectedStatus === 'inactive' && !supplier.is_active);
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const getStatusColor = (status: 'active' | 'inactive' | 'pending') => {
+  const getStatusColor = (status: 'active' | 'inactive') => {
     switch (status) {
       case 'active': return 'default';
       case 'inactive': return 'secondary';
-      case 'pending': return 'secondary';
       default: return 'secondary';
     }
   };
@@ -242,7 +322,6 @@ export function SupplierManagement() {
   };
 
   const totalSuppliers = suppliers.length;
-  // Fix for active suppliers count
   const activeSuppliers = suppliers.filter(s => s.is_active).length;
   const totalOutstanding = suppliers.reduce((sum, s) => sum + (s.current_balance || 0), 0);
   const pendingOrders = purchaseOrders.filter(po => po.status === 'pending').length;
@@ -280,7 +359,11 @@ export function SupplierManagement() {
         <div className="flex gap-2">
           <Dialog open={isCreateOrderOpen} onOpenChange={setIsCreateOrderOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2" onClick={() => {
+                setIsCreateOrderOpen(true);
+                setCreateOrderError(null);
+                setCreateOrderSuccess(false);
+              }}>
                 <Package className="h-4 w-4" />
                 Create Order
               </Button>
@@ -289,35 +372,109 @@ export function SupplierManagement() {
               <DialogHeader>
                 <DialogTitle>Create Purchase Order</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Supplier</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select supplier" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {suppliers.filter(s => s.is_active).map(supplier => (
-                          <SelectItem key={supplier.id} value={supplier.id}>{supplier.company_name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              <form onSubmit={handleCreateOrder}>
+                <div className="grid grid-cols-1 gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="supplier_id">Supplier</Label>
+                      <Select
+                        value={newOrder.supplier_id}
+                        onValueChange={(value) => setNewOrder({ ...newOrder, supplier_id: value })}
+                      >
+                        <SelectTrigger id="supplier_id">
+                          <SelectValue placeholder="Select supplier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {suppliers.filter(s => s.is_active).map(supplier => (
+                            <SelectItem key={supplier.id} value={supplier.id}>{supplier.company_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="delivery_date">Delivery Date</Label>
+                      <Input
+                        id="delivery_date"
+                        type="date"
+                        value={newOrder.delivery_date}
+                        onChange={(e) => setNewOrder({ ...newOrder, delivery_date: e.target.value })}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Delivery Date</Label>
-                    <Input type="date" />
+                  
+                  <div className="space-y-4 pt-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Order Items</Label>
+                      <Button type="button" variant="ghost" size="sm" onClick={handleAddItem}>
+                        <PlusCircle className="h-4 w-4 mr-2" /> Add Item
+                      </Button>
+                    </div>
+                    {newOrder.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-6 gap-2 items-end">
+                        <div className="col-span-3">
+                          <Label htmlFor={`product-${index}`}>Product</Label>
+                          <Input
+                            id={`product-${index}`}
+                            placeholder="Product name"
+                            value={item.product}
+                            onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Label htmlFor={`quantity-${index}`}>Qty</Label>
+                          <Input
+                            id={`quantity-${index}`}
+                            type="number"
+                            placeholder="0"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Label htmlFor={`price-${index}`}>Price</Label>
+                          <Input
+                            id={`price-${index}`}
+                            type="number"
+                            placeholder="0"
+                            value={item.unit_price}
+                            onChange={(e) => handleItemChange(index, 'unit_price', Number(e.target.value))}
+                          />
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveItem(index)} disabled={newOrder.items.length === 1}>
+                          <X className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
+
+                  {isCreating && (
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="text-sm text-muted-foreground">Creating order...</span>
+                    </div>
+                  )}
+                  {createOrderError && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{createOrderError}</AlertDescription>
+                    </Alert>
+                  )}
+                  {createOrderSuccess && (
+                    <Alert className="mt-4 border-green-500">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <AlertTitle>Success</AlertTitle>
+                      <AlertDescription>Purchase order created successfully!</AlertDescription>
+                    </Alert>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea placeholder="Additional notes or requirements" />
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" type="button" onClick={() => setIsCreateOrderOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating ? 'Creating...' : 'Create Order'}
+                  </Button>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsCreateOrderOpen(false)}>Cancel</Button>
-                <Button>Create Order</Button>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
           

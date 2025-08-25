@@ -13,7 +13,7 @@ class SupplierListCreateAPIView(APIView):
     """
     def get(self,request):
         suppliers= Supplier.objects.all()
-        serializer = SuppliersSerializer(suppliers,many=True)
+        serializer = SuppliersSerializer(suppliers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -70,5 +70,56 @@ class PurchaseOrderListCreateAPIView(APIView):
     """
     
     def get(self, request):
-        purchase_orders = PurchaseOrder.objects.get()
-        serializer = Pu
+        purchase_orders = PurchaseOrder.objects.all()
+        serializer = PurchaseOrderSerializer(purchase_orders,many =True)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    
+    """
+    POST METHOD: To create a new purchase order instance
+    """
+    
+    def post(self, request):
+        serializer = PurchaseOrderSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save(tenant = request.user.tenant)
+            return Response(serializer.data, status= status.HTTP_201_CREATED)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class PurchaseOrderRetriveUpdateDestroyAPIView(APIView):
+    
+    """
+    helper method to get a single instance of a purchase order
+    """
+    def get_object(self,pk):
+        return get_object_or_404(PurchaseOrder,pk=pk)
+    
+    """
+    GET METHOD: To retrieve a particular purchase order
+    """
+    def get(self, request,pk):
+        purchase_order = self.get_object(pk)
+        serializer = PurchaseOrderSerializer(purchase_order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    """
+    PUT METHOD: To update a single purchase order instance using its ID
+    """
+    
+    def put(self, request, pk):
+        purchase_order = self.get_object(pk)
+        serializer =PurchaseOrderSerializer(purchase_order, data = request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    """
+    DELETE METHOD: To delete a single instance of an object
+    """
+    
+    def delete(self, pk):
+        purchase_order = self.get_object(pk)
+        if not purchase_order:
+            return Response({'message':"Purchase order does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        purchase_order.delete()
+        return Response({"message":"Purchase order deleted successfully"}, status=status.HHTP_204_NO_CONTENT)
