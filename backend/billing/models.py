@@ -4,7 +4,7 @@ from django.db import models
 
 class Bill(models.Model):
     bill_number = models.CharField(max_length=50, unique=True)
-    bill_date = models.DateField()
+    bill_date = models.DateField(auto_created=True)
     due_date = models.DateField()
     vendor = models.ForeignKey('suppliers.Supplier', on_delete=models.SET_NULL, null=True)
     vendor_name = models.CharField(max_length=255)
