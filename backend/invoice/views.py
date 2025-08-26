@@ -24,6 +24,8 @@ class InvoiceListCreateAPIView(APIView):
     
     def post(self, request):
         serializer =InvoiceSerializer(data = request.data)
+        data = request.data
+        print(data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status = status.HTTP_201_CREATED)

@@ -27,6 +27,9 @@ urlpatterns = [
     path("api/v1/multi_location/", include('multi_location.urls')),
     path('api/v1/cash/', include('cash_management.urls')),
     
+    #quick paths
+    path('api/v1/invoice/', include('invoice.urls')),
+   
     #swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/redoc/", SpectacularRedocView.as_view(

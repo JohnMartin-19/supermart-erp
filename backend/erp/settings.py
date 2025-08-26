@@ -79,6 +79,7 @@ TENANT_APPS = [
     'multi_location',
     'suppliers',
     'cash_management',
+    'invoice',
     
     #core apps
     'accounting',
