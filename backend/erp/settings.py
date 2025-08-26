@@ -45,6 +45,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
+    'rest_framework_swagger',
+    'drf_yasg',
+    "drf_spectacular",
+
     
     
 ]
@@ -59,12 +63,15 @@ SHARED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+     "drf_spectacular",
+    
 )
 
 TENANT_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+     "drf_spectacular",
     # tenant-specific apps...
     'authentication',
     'products',
@@ -120,6 +127,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
+,
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Blog API Project",
+    "DESCRIPTION": "A sample blog to learn about DRF",
+    "VERSION": "1.0.0",
 }
 
 SIMPLE_JWT = {
