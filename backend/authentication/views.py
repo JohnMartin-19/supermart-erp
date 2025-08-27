@@ -51,8 +51,6 @@ class LoginAPIView(TokenObtainPairView):
 class LogoutAPIView(APIView):
     def post(self, request) :
         try:
-             data = request.data
-             print('DATA:',data)
              refresh_token = request.data['refresh']
              token = RefreshToken(refresh_token)
              if token:

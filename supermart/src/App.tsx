@@ -17,9 +17,21 @@ import { CashManagement } from './components/CashManagement';
 import { SignUp } from './components/SignUp';
 import { Login } from './components/Login';
 import { Toaster } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 import './styles/globals.css';
 import { toast } from 'sonner';
+
+// Reusable Overlay Component
+const Overlay = ({ message }: { message: string }) => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center">
+    <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center gap-4 text-center">
+      <Loader2 className="h-10 w-10 text-primary animate-spin" />
+      <h3 className="text-lg font-semibold">{message}</h3>
+      <p className="text-sm text-muted-foreground">This may take a moment.</p>
+    </div>
+  </div>
+);
 
 function Settings() {
   return (
@@ -73,6 +85,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isLogoutLoading, setIsLogoutLoading] = useState(false); // New state for logout overlay
   const [showSignup, setShowSignup] = useState(false);
   const [showDelayOverlay, setShowDelayOverlay] = useState(false); // New state for the overlay
 
@@ -180,55 +193,54 @@ export default function App() {
 
         const data = await response.json();
         if (response.ok) {
-            // Await the intentional delay before showing the success toast and redirecting
+            
             setTimeout(() => {
-                setShowDelayOverlay(false); // Hide the overlay after the delay
+                setShowDelayOverlay(false); 
                 toast.success('Account created successfully!', {
                     description: 'You can now log in with your new credentials.',
                 });
-                setShowSignup(false); // Redirect to login page
-            }, 5000); // 5-second delay
+                setShowSignup(false); 
+            }, 5000); 
         } else {
             setAuthError(data.detail || 'Registration failed. Please try again.');
-            setShowDelayOverlay(false); // Hide overlay on API failure
+            setShowDelayOverlay(false); 
         }
     } catch (error) {
         setAuthError('An error occurred. Please try again later.');
         console.error('Registration error:', error);
-        setShowDelayOverlay(false); // Hide overlay on network error
+        setShowDelayOverlay(false); 
     } finally {
-        setIsAuthLoading(false); // Always stop API loading, even if the overlay is still visible
+        setIsAuthLoading(false); 
     }
   };
 
   const handleLogout = async () => {
+    setIsLogoutLoading(true); 
     const accessToken = localStorage.getItem('access_token');
     const refreshToken = localStorage.getItem('refresh_token');
-
-    try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/logout/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ refresh: refreshToken }),
-      });
-
-      if (!response.ok) {
-        // Log the error but continue with client-side logout
-        console.error('Logout API failed with status:', response.status);
-      }
-    } catch (error) {
-      // Log the error but continue with client-side logout
+  
+   
+    fetch('http://murimart.localhost:8000/api/v1/authentication/logout/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+    }).catch(error => {
+      
       console.error('Logout API call failed:', error);
-    } finally {
-      // Always clear tokens and redirect, regardless of API response
+    });
+  
+    
+    setTimeout(() => {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       setIsLoggedIn(false);
       setActiveModule('dashboard');
-    }
+      setIsLogoutLoading(false); // Hide the overlay
+      window.location.href = '/login'; // Redirect the user
+    }, 5000);
   };
 
   if (!isLoggedIn) {
@@ -257,6 +269,7 @@ export default function App() {
 
   return (
     <>
+      {isLogoutLoading && <Overlay message="Logging you out..." />}
       <Layout activeModule={activeModule} onModuleChange={setActiveModule} onLogout={handleLogout}>
         {renderModule()}
         <FloatingActionButton
