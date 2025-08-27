@@ -51,11 +51,13 @@ class LoginAPIView(TokenObtainPairView):
 class LogoutAPIView(APIView):
     def post(self, request) :
         try:
-             refresh_token = request.data['refresh_token']
+             data = request.data
+             print('DATA:',data)
+             refresh_token = request.data['refresh']
              token = RefreshToken(refresh_token)
              if token:
                 token.blacklist()
                 return Response({"message": "Successfully logged out."},status = status.HTTP_200_OK)
         except Exception as e:
-            return Response({"error":str(e)}, status = status.HTTP_BAD_REQUEST)
+            return Response({"error":str(e)}, status = status.HTTP_400_BAD_REQUEST)
     

@@ -23,8 +23,6 @@ class BillListCreateBillAPIView(APIView):
     POST METHOD: to create a new bill
     """
     def post(self, request):
-        data = request.data
-        print("DATA:", data)
         serializer = BillSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)

@@ -201,11 +201,34 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    setIsLoggedIn(false);
-    setActiveModule('dashboard');
+  const handleLogout = async () => {
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    try {
+      const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/logout/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+
+      if (!response.ok) {
+        // Log the error but continue with client-side logout
+        console.error('Logout API failed with status:', response.status);
+      }
+    } catch (error) {
+      // Log the error but continue with client-side logout
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Always clear tokens and redirect, regardless of API response
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setIsLoggedIn(false);
+      setActiveModule('dashboard');
+    }
   };
 
   if (!isLoggedIn) {

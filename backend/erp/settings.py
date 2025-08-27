@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_swagger',
     'drf_yasg',
     "drf_spectacular",
+    'rest_framework_simplejwt.token_blacklist',
 
     
     
@@ -64,6 +65,7 @@ SHARED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
      "drf_spectacular",
+     'rest_framework_simplejwt.token_blacklist',
     
 )
 
@@ -72,6 +74,7 @@ TENANT_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
      "drf_spectacular",
+     'rest_framework_simplejwt.token_blacklist',
     # tenant-specific apps...
     'authentication',
     'products',

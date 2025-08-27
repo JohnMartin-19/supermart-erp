@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { useEffect } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -22,6 +23,14 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onQuickInvoice, onQuickBilling }: DashboardProps) {
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
+      window.location.href = '/login';
+    }
+  }, []);
+
   const stats = [
     {
       title: 'Total Revenue',
