@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
-import { Plus, FileText, Receipt, Zap } from 'lucide-react';
+import { Plus, FileText, Receipt, Zap, Calculator, DollarSign } from 'lucide-react';
 import { cn } from './ui/utils';
 
 interface FloatingActionButtonProps {
   onQuickInvoice: () => void;
   onQuickBilling: () => void;
+  onGSTCalculator: () => void;
+  onQuickPayment: () => void;
 }
 
-export function FloatingActionButton({ onQuickInvoice, onQuickBilling }: FloatingActionButtonProps) {
+export function FloatingActionButton({ 
+  onQuickInvoice, 
+  onQuickBilling, 
+  onGSTCalculator, 
+  onQuickPayment 
+}: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const quickActions = [
@@ -32,6 +39,26 @@ export function FloatingActionButton({ onQuickInvoice, onQuickBilling }: Floatin
         setIsOpen(false);
       },
       color: 'bg-green-600 hover:bg-green-700 text-white',
+    },
+    {
+      id: 'gst-calculator',
+      label: 'GST Calculator',
+      icon: Calculator,
+      action: () => {
+        onGSTCalculator();
+        setIsOpen(false);
+      },
+      color: 'bg-purple-600 hover:bg-purple-700 text-white',
+    },
+    {
+      id: 'payment',
+      label: 'Quick Payment',
+      icon: DollarSign,
+      action: () => {
+        onQuickPayment();
+        setIsOpen(false);
+      },
+      color: 'bg-orange-600 hover:bg-orange-700 text-white',
     },
   ];
 

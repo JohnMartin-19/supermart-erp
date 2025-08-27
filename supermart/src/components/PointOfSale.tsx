@@ -1,16 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Trash2, Plus, Minus, Calculator, CreditCard, Banknote, Receipt } from 'lucide-react';
+import { Trash2, Plus, Minus, Calculator, CreditCard, Banknote, Receipt, Loader2, AlertCircle } from 'lucide-react';
 
-interface CartItem {
-  id: string;
+// Update the Product interface to match the API response
+interface Product {
+  id: number; // API returns a number for id
   name: string;
-  price: number;
+  description: string;
+  category: string;
+  cost_price: string;
+  selling_price: string; // API returns a string
+  initial_stock: number;
+  current_stock: number;
+  minimum_stock_level: number;
+  barcode: string;
+  is_perishable: boolean;
+  is_active: boolean;
+}
+
+// Update the CartItem interface
+interface CartItem {
+  id: number;
+  name: string;
+  price: number; // This will be the parsed selling_price
   quantity: number;
   barcode?: string;
   category: string;
@@ -23,39 +40,77 @@ export function PointOfSale() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountTendered, setAmountTendered] = useState('');
 
-  // Mock product data - would come from Django API
-  const products = [
-    { id: '1', name: 'Bread - White Loaf', price: 50, barcode: '1234567890', category: 'Bakery' },
-    { id: '2', name: 'Milk - 1L Fresh', price: 75, barcode: '2345678901', category: 'Dairy' },
-    { id: '3', name: 'Eggs - Tray of 30', price: 320, barcode: '3456789012', category: 'Dairy' },
-    { id: '4', name: 'Rice - 2kg Basmati', price: 180, barcode: '4567890123', category: 'Grains' },
-    { id: '5', name: 'Sugar - 1kg White', price: 120, barcode: '5678901234', category: 'Pantry' },
-    { id: '6', name: 'Cooking Oil - 1L', price: 250, barcode: '6789012345', category: 'Pantry' },
-  ];
+  const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addToCart = (product: typeof products[0]) => {
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      setError(null);
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        setError("Authentication token not found. Please log in.");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch products. Please try again.');
+        }
+
+        const data = await response.json();
+        setFetchedProducts(data);
+      } catch (err: any) {
+        console.error("Error fetching products:", err);
+        setError(err.message || 'An unexpected error occurred while fetching products.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.id === product.id);
+    const sellingPrice = parseFloat(product.selling_price);
+
     if (existingItem) {
-      setCart(cart.map(item => 
-        item.id === product.id 
+      setCart(cart.map(item =>
+        item.id === product.id
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
     } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
+      setCart([...cart, {
+        id: product.id,
+        name: product.name,
+        price: sellingPrice, // Use the parsed selling_price
+        quantity: 1,
+        barcode: product.barcode,
+        category: product.category,
+      }]);
     }
   };
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = (id: number) => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  const updateQuantity = (id: string, newQuantity: number) => {
+  const updateQuantity = (id: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(id);
       return;
     }
-    setCart(cart.map(item => 
+    setCart(cart.map(item =>
       item.id === id ? { ...item, quantity: newQuantity } : item
     ));
   };
@@ -66,17 +121,17 @@ export function PointOfSale() {
   const total = subtotal + vatAmount;
   const change = parseFloat(amountTendered) - total;
 
-  const filteredProducts = products.filter(product =>
+  const filteredProducts = fetchedProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.barcode?.includes(searchQuery)
   );
 
   const processPayment = () => {
     if (cart.length === 0) return;
-    
+
     // Mock payment processing - would integrate with Django API
     alert(`Payment processed successfully!\nTotal: KES ${total.toFixed(2)}\nChange: KES ${change >= 0 ? change.toFixed(2) : '0.00'}`);
-    
+
     // Clear cart after successful payment
     setCart([]);
     setAmountTendered('');
@@ -113,23 +168,45 @@ export function PointOfSale() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                {filteredProducts.map((product) => (
-                  <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addToCart(product)}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-sm line-clamp-2">{product.name}</h4>
-                        <Badge variant="secondary" className="text-xs">{product.category}</Badge>
-                      </div>
-                      <p className="font-semibold text-primary">KES {product.price}</p>
-                      {product.barcode && (
-                        <p className="text-xs text-muted-foreground mt-1">{product.barcode}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+
+              {isLoading && (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  <span className="mt-4 text-sm text-muted-foreground">Loading products...</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {!isLoading && !error && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addToCart(product)}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-medium text-sm line-clamp-2">{product.name}</h4>
+                            <Badge variant="secondary" className="text-xs">{product.category}</Badge>
+                          </div>
+                          <p className="font-semibold text-primary">KES {parseFloat(product.selling_price).toFixed(2)}</p>
+                          {product.barcode && (
+                            <p className="text-xs text-muted-foreground mt-1">{product.barcode}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="col-span-3 text-center text-muted-foreground py-8">
+                      No products found.
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -155,7 +232,7 @@ export function PointOfSale() {
                     <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <h5 className="font-medium text-sm">{item.name}</h5>
-                        <p className="text-sm text-muted-foreground">KES {item.price} each</p>
+                        <p className="text-sm text-muted-foreground">KES {item.price.toFixed(2)} each</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -256,8 +333,8 @@ export function PointOfSale() {
                   </div>
                 )}
 
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={processPayment}
                   disabled={cart.length === 0 || (paymentMethod === 'cash' && change < 0)}
                 >

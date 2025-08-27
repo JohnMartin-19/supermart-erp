@@ -20,9 +20,11 @@ import { Badge } from './ui/badge';
 interface DashboardProps {
   onQuickInvoice?: () => void;
   onQuickBilling?: () => void;
+  onGSTCalculator?: () => void;
+  onQuickPayment?: () => void;
 }
 
-export function Dashboard({ onQuickInvoice, onQuickBilling }: DashboardProps) {
+export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQuickPayment }: DashboardProps) {
 
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
@@ -76,48 +78,32 @@ export function Dashboard({ onQuickInvoice, onQuickBilling }: DashboardProps) {
       description: 'Generate a new invoice quickly',
       icon: FileText,
       action: onQuickInvoice,
-      colors: {
-        bg: 'bg-blue-50 hover:bg-blue-100',
-        border: 'border-blue-200',
-        text: 'text-blue-900',
-        icon: 'text-blue-600',
-      },
+      color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900',
+      iconColor: 'text-blue-600',
     },
     {
       title: 'Quick Bill',
       description: 'Create and send bills instantly',
       icon: Receipt,
       action: onQuickBilling,
-      colors: {
-        bg: 'bg-green-50 hover:bg-green-100',
-        border: 'border-green-200',
-        text: 'text-green-900',
-        icon: 'text-green-600',
-      },
+      color: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-900',
+      iconColor: 'text-green-600',
     },
     {
-      title: 'GST Calculator',
-      description: 'Calculate GST on transactions',
+      title: 'Tax Calculator',
+      description: 'Calculate Tax on transactions',
       icon: Calculator,
-      action: () => console.log('GST Calculator'),
-      colors: {
-        bg: 'bg-purple-50 hover:bg-purple-100',
-        border: 'border-purple-200',
-        text: 'text-purple-900',
-        icon: 'text-purple-600',
-      },
+      action:onGSTCalculator,
+      color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-900',
+      iconColor: 'text-red-600',
     },
     {
       title: 'Quick Payment',
       description: 'Record payment received',
       icon: DollarSign,
-      action: () => console.log('Quick Payment'),
-      colors: {
-        bg: 'bg-orange-50 hover:bg-orange-100',
-        border: 'border-orange-200',
-        text: 'text-orange-900',
-        icon: 'text-orange-600',
-      },
+      action:onQuickPayment,
+      color: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-900',
+      iconColor: 'text-orange-600',
     },
   ];
 
@@ -158,7 +144,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling }: DashboardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5" />
+            <Zap className="w-5 h-5  text-red-600" />
             Quick Actions
           </CardTitle>
         </CardHeader>
@@ -168,10 +154,10 @@ export function Dashboard({ onQuickInvoice, onQuickBilling }: DashboardProps) {
               <button
                 key={index}
                 onClick={action.action}
-                className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md text-left ${action.colors.bg} ${action.colors.border} ${action.colors.text}`}
+                className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md text-left ${action.color}`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <action.icon className={`w-6 h-6 ${action.colors.icon}`} />
+                  <action.icon className={`w-6 h-6 ${action.iconColor}`} />
                 </div>
                 <h3 className="font-medium mb-1">{action.title}</h3>
                 <p className="text-sm opacity-80">{action.description}</p>

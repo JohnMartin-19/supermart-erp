@@ -16,6 +16,8 @@ import { MultiLocationManagement } from './components/MultiLocationManagement';
 import { CashManagement } from './components/CashManagement';
 import { SignUp } from './components/SignUp';
 import { Login } from './components/Login';
+import { GSTCalculator } from './components/TaxCalculator';
+import { QuickPayment } from './components/QuickPayment';
 import { Toaster } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -85,12 +87,12 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
-  const [isLogoutLoading, setIsLogoutLoading] = useState(false); // New state for logout overlay
+  const [isLogoutLoading, setIsLogoutLoading] = useState(false); 
   const [showSignup, setShowSignup] = useState(false);
-  const [showDelayOverlay, setShowDelayOverlay] = useState(false); // New state for the overlay
+  const [showDelayOverlay, setShowDelayOverlay] = useState(false); 
 
   useEffect(() => {
-    // Check for existing tokens on app load
+    
     const accessToken = localStorage.getItem('access_token');
     if (accessToken) {
       setIsLoggedIn(true);
@@ -104,6 +106,14 @@ export default function App() {
   const handleQuickBilling = () => {
     setActiveModule('quick-billing');
   };
+  const handleGSTCalculator = () => {
+    setActiveModule('gst-calculator');
+  };
+
+  const handleQuickPayment = () => {
+    setActiveModule('quick-payment');
+  };
+
 
   const renderModule = () => {
     switch (activeModule) {
@@ -112,6 +122,8 @@ export default function App() {
           <Dashboard
             onQuickInvoice={handleQuickInvoice}
             onQuickBilling={handleQuickBilling}
+            onGSTCalculator={handleGSTCalculator}
+            onQuickPayment={handleQuickPayment}
           />
         );
       case 'pos':
@@ -132,6 +144,10 @@ export default function App() {
         return <QuickBilling />;
       case 'accounting':
         return <Accounting />;
+      case 'gst-calculator':
+        return <GSTCalculator />;
+      case 'quick-payment':
+        return <QuickPayment />;
       case 'inventory':
         return <Inventory />;
       case 'tax':
@@ -238,8 +254,8 @@ export default function App() {
       localStorage.removeItem('refresh_token');
       setIsLoggedIn(false);
       setActiveModule('dashboard');
-      setIsLogoutLoading(false); // Hide the overlay
-      window.location.href = '/login'; // Redirect the user
+      setIsLogoutLoading(false); 
+      window.location.href = '/login'; 
     }, 5000);
   };
 
@@ -274,8 +290,13 @@ export default function App() {
         {renderModule()}
         <FloatingActionButton
           onQuickInvoice={handleQuickInvoice}
-          onQuickBilling={handleQuickBilling}
-        />
+          onQuickBilling={handleQuickBilling} 
+          onGSTCalculator={function (): void {
+            throw new Error('Function not implemented.');
+          } }
+          onQuickPayment={function (): void {
+            throw new Error('Function not implemented.');
+          } }        />
       </Layout>
       <Toaster />
     </>
