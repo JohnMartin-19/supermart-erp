@@ -1,22 +1,22 @@
 from django.db import models
 
 
-
-class Category(models.Model):
-    name = models.CharField(max_length=100,unique=True)
-    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE,related_name='inventory_categories')
-    
-    class Meta:
-        verbose_name_plural = 'categories'
-        
-    def __str__(self):
-        return self.name
-    
-    
+CATEGORY_CHOICE = [
+    ('Electronics', 'Electronics'),
+    ('Accessories', 'Accessories'),
+    ('Furniture', 'Furniture'),
+    ('Apparel', 'Apparel'),
+    ('Books', 'Books'),
+    ('Home & Garden', 'Home & Garden'),
+    ('Toys & Games', 'Toys & Games'),
+    ('Sports & Outdoors', 'Sports & Outdoors'),
+    ('Health & Beauty', 'Health & Beauty'),
+    ('Automotive', 'Automotive'),
+] 
 class Product(models.Model):
     name = models.CharField(max_length=100)
     sku = models.CharField(max_length=100)
-    categories = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name = 'products')
+    categories = models.CharField(max_length=100, null=True, blank=True)
     price = models.DecimalField(max_digits=10,decimal_places=2)
     supplier = models.ForeignKey('suppliers.Supplier', on_delete=models.SET_NULL, null=True, related_name='products')
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE,related_name='inventory_products')
