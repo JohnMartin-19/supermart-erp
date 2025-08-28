@@ -13,12 +13,19 @@ CATEGORY_CHOICE = [
     ('Health & Beauty', 'Health & Beauty'),
     ('Automotive', 'Automotive'),
 ] 
+
+STATUS_CHOICES = [
+    ('In Stock', 'In Stock'),
+    ('Low Stock', 'Low Stock'),
+    ('Out of Stock', 'Out of Stock'),
+]
 class Product(models.Model):
     name = models.CharField(max_length=100)
     sku = models.CharField(max_length=100)
     categories = models.CharField(max_length=100, null=True, blank=True)
     price = models.DecimalField(max_digits=10,decimal_places=2)
-    supplier = models.ForeignKey('suppliers.Supplier', on_delete=models.SET_NULL, null=True, related_name='products')
+    supplier = models.CharField(max_length=100, null=True, blank=True)
+    stock_status = models.CharField(max_length=100, null=True, choices=STATUS_CHOICES)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE,related_name='inventory_products')
     
     def __str__(self):
