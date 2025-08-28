@@ -49,9 +49,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     "drf_spectacular",
     'rest_framework_simplejwt.token_blacklist',
-
-    
-    
+   
 ]
 
 SHARED_APPS = (

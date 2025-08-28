@@ -22,7 +22,6 @@ class RegisterAPIView(APIView):
                 if Tenant.objects.filter(name = company_name).exists():
                     return Response({'A tenant with the company name exists'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                #create a tenant instance
                 tenant_name_slug = company_name.replace(" ", "").lower()
                 tenant = Tenant.objects.create(
                     name = company_name,
@@ -32,8 +31,6 @@ class RegisterAPIView(APIView):
                     phone_number = phone_number
                     
                 )
-                
-                #create a user
                 password = serializer.validated_data.pop('password')
                 user = User.objects.create_user(password=password,tenant = tenant **serializer.validated_data)
                 user.save()
