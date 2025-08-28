@@ -1,12 +1,17 @@
 from rest_framework import serializers
 from .models import *
 
-
-class productSerializer(serializers.ModelSerializer):
+class InventorySerializer(serializers.ModelSerializer):
     
     class Meta:
+        model = Inventory
+        fields = ['id','product','branch','current_stock','min_stock','max_stock','tenant']
+        read_only_fields = ['tenant']
+class productSerializer(serializers.ModelSerializer):
+    inventory = InventorySerializer(read_only=True, many=True, source="inventory_set")
+    class Meta:
         model  = Product
-        fields = ['id','name','sku','categories','price','supplier','stock_status', 'tenant']
+        fields = ['id','name','sku','categories','price','supplier','stock_status', 'tenant', 'inventory']
         read_only_fields = ['tenant']
         
     def create(self, validated_data):
@@ -23,9 +28,3 @@ class productSerializer(serializers.ModelSerializer):
             tenant=product.tenant
         )
         
-class InventorySerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = Inventory
-        fields = ['id','product','branch','current_stock','min_stock','max_stock','tenant']
-        read_only_fields = ['tenant']
