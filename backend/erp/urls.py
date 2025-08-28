@@ -30,6 +30,9 @@ urlpatterns = [
     #quick paths
     path('api/v1/invoice/', include('invoice.urls')),
     path('api/v1/billing/', include('billing.urls')),
+    
+    #core apps urls
+    path('api/v1/inventory/', include('inventory.urls')),
     #swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/redoc/", SpectacularRedocView.as_view(

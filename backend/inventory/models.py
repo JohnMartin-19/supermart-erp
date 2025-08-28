@@ -22,7 +22,7 @@ STATUS_CHOICES = [
 class Product(models.Model):
     name = models.CharField(max_length=100)
     sku = models.CharField(max_length=100)
-    categories = models.CharField(max_length=100, null=True, blank=True)
+    categories = models.CharField(max_length=100, null=True, blank=True, choices=CATEGORY_CHOICE)
     price = models.DecimalField(max_digits=10,decimal_places=2)
     supplier = models.CharField(max_length=100, null=True, blank=True)
     stock_status = models.CharField(max_length=100, null=True, choices=STATUS_CHOICES)

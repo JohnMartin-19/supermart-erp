@@ -1,8 +1,8 @@
-from rest_framework import serialziers
+from rest_framework import serializers
 from .models import *
 
 
-class productSerializer(serialziers.ModelSerializer):
+class productSerializer(serializers.ModelSerializer):
     
     class Meta:
         model  = Product
@@ -23,7 +23,7 @@ class productSerializer(serialziers.ModelSerializer):
             tenant=product.tenant
         )
         
-class InventorySerializer(serialziers.ModelSerializer):
+class InventorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Inventory
