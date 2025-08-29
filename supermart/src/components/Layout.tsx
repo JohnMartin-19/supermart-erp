@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from './ui/utils';
 import {
   Sidebar,
@@ -31,7 +31,8 @@ import {
   Truck,
   Building2,
   Banknote,
-  LogOut, // Import the LogOut icon
+  LogOut,
+  User, // New: Import the User icon
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -39,7 +40,7 @@ interface LayoutProps {
   children: React.ReactNode;
   activeModule: string;
   onModuleChange: (module: string) => void;
-  onLogout: () => void; // Add the onLogout prop
+  onLogout: () => void;
 }
 
 const menuItems = [
@@ -117,9 +118,12 @@ const coreModulesItems = [
     title: 'Payroll',
     icon: Users,
   },
-];
-
-const systemItems = [
+  // New: Added Profile and Settings menu items
+  {
+    id: 'profile',
+    title: 'Profile',
+    icon: User,
+  },
   {
     id: 'settings',
     title: 'Settings',
@@ -127,8 +131,27 @@ const systemItems = [
   },
 ];
 
+const systemItems = [
+  // This section can be repurposed or left as is, since settings is now in coreModulesItems
+];
+
 export function Layout({ children, activeModule, onModuleChange, onLogout }: LayoutProps) {
   const [isDark, setIsDark] = useState(false);
+  const [companyName, setCompanyName] = useState('SuperMart ERP');
+
+  useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.company_name) {
+          setCompanyName(userData.company_name);
+        }
+      } catch (e) {
+        console.error("Failed to parse user data from localStorage", e);
+      }
+    }
+  }, []);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -145,7 +168,7 @@ export function Layout({ children, activeModule, onModuleChange, onLogout }: Lay
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">SuperMart ERP</span>
+                <span className="truncate font-semibold">{companyName}</span>
                 <span className="truncate text-xs">Kenyan Supermarket Chain</span>
               </div>
             </div>
@@ -225,29 +248,6 @@ export function Layout({ children, activeModule, onModuleChange, onLogout }: Lay
               <SidebarGroupContent>
                 <SidebarMenu>
                   {coreModulesItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        asChild
-                        onClick={() => onModuleChange(item.id)}
-                        className={cn(
-                          activeModule === item.id && 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        )}
-                      >
-                        <a href="#" className="flex items-center gap-3">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel>System</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {systemItems.map((item) => (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
                         asChild
