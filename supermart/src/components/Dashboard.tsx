@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -14,6 +14,7 @@ import {
   Clock,
   Zap,
   Calculator,
+  Loader2,
 } from 'lucide-react';
 import { Badge } from './ui/badge';
 
@@ -24,13 +25,56 @@ interface DashboardProps {
   onQuickPayment?: () => void;
 }
 
-export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQuickPayment }: DashboardProps) {
+export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQuickPayment }: DashboardProps) {
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalInventories, setTotalInventories] = useState(0);
+  const [totalInvoices, setTotalInvoices] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) {
       window.location.href = '/login';
+      return;
     }
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      };
+
+      try {
+        const [customersRes, inventoriesRes, invoicesRes] = await Promise.all([
+          fetch('http://murimart.localhost:8000/api/v1/customers/customers/', { headers }),
+          fetch('http://murimart.localhost:8000/api/v1/inventory/inventories/', { headers }),
+          fetch('http://murimart.localhost:8000/api/v1/invoice/quick_invoices/', { headers }),
+        ]);
+
+        if (!customersRes.ok || !inventoriesRes.ok || !invoicesRes.ok) {
+          throw new Error('Failed to fetch data from one or more endpoints.');
+        }
+
+        const customersData = await customersRes.json();
+        const inventoriesData = await inventoriesRes.json();
+        const invoicesData = await invoicesRes.json();
+
+        setTotalCustomers(customersData.length);
+        setTotalInventories(inventoriesData.length);
+        setTotalInvoices(invoicesData.length);
+
+      } catch (err: any) {
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to load dashboard data. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const stats = [
@@ -43,21 +87,21 @@ export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQ
     },
     {
       title: 'Active Customers',
-      value: '1,234',
+      value: isLoading ? '...' : totalCustomers.toString(),
       change: '+8.2%',
       trend: 'up',
       icon: Users,
     },
     {
       title: 'Inventory Items',
-      value: '5,678',
+      value: isLoading ? '...' : totalInventories.toString(),
       change: '-2.1%',
       trend: 'down',
       icon: Package,
     },
     {
-      title: 'Pending Invoices',
-      value: '23',
+      title: 'Total Invoices',
+      value: isLoading ? '...' : totalInvoices.toString(),
       change: '+15.3%',
       trend: 'up',
       icon: FileText,
@@ -66,9 +110,9 @@ export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQ
 
   const recentActivities = [
     { id: 1, type: 'invoice', message: 'Invoice #INV-001 created for ABC Corp', time: '2 mins ago', status: 'success' },
-    { id: 2, type: 'payment', message: 'Payment received from XYZ Ltd - ₹50,000', time: '15 mins ago', status: 'success' },
+    { id: 2, type: 'payment', message: 'Payment received from XYZ Ltd - KSH 50,000', time: '15 mins ago', status: 'success' },
     { id: 3, type: 'inventory', message: 'Low stock alert: Product A (10 units left)', time: '1 hour ago', status: 'warning' },
-    { id: 4, type: 'tax', message: 'GST return filed successfully', time: '2 hours ago', status: 'success' },
+    { id: 4, type: 'tax', message: 'VAT return filed successfully', time: '2 hours ago', status: 'success' },
     { id: 5, type: 'payroll', message: 'Salary processed for 25 employees', time: '1 day ago', status: 'success' },
   ];
 
@@ -93,7 +137,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQ
       title: 'Tax Calculator',
       description: 'Calculate Tax on transactions',
       icon: Calculator,
-      action:onGSTCalculator,
+      action: onGSTCalculator,
       color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-900',
       iconColor: 'text-red-600',
     },
@@ -101,7 +145,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQ
       title: 'Quick Payment',
       description: 'Record payment received',
       icon: DollarSign,
-      action:onQuickPayment,
+      action: onQuickPayment,
       color: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-900',
       iconColor: 'text-orange-600',
     },
@@ -119,6 +163,24 @@ export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQ
         return <CheckCircle className="w-4 h-4 text-gray-500" />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 space-y-4">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <p className="text-muted-foreground">Loading dashboard data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 space-y-4 text-red-600">
+        <AlertCircle className="h-8 w-8" />
+        <p className="text-center">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -144,7 +206,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling ,onGSTCalculator, onQ
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5  text-red-600" />
+            <Zap className="w-5 h-5 text-red-600" />
             Quick Actions
           </CardTitle>
         </CardHeader>

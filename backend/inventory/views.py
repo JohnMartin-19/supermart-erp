@@ -77,3 +77,20 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
         product = self.get_object(pk)
         product.delete()
         return Response({"message":"Product deleted"},status = status.HTTP_204_NO_CONTENT)
+    
+    
+    
+    
+class InventoryListCreateAPIView(APIView):
+    """GET
+
+    Args:
+        request
+    """
+    
+    def get(self, request):
+        
+        inventory_items = Inventory.objects.all()
+        serializer =InventorySerializer(inventory_items, many = True)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    

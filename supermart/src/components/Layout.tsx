@@ -140,15 +140,19 @@ export function Layout({ children, activeModule, onModuleChange, onLogout }: Lay
   const [companyName, setCompanyName] = useState('SuperMart ERP');
 
   useEffect(() => {
-    const user = localStorage.getItem('currentUser');
-    if (user) {
+    const token = localStorage.getItem('access_token');
+    
+    if (token) {
       try {
-        const userData = JSON.parse(user);
-        if (userData.company_name) {
-          setCompanyName(userData.company_name);
+        // JWT = header.payload.signature → we only need the payload
+        const payloadBase64 = token.split(".")[1]; 
+        const decodedPayload = JSON.parse(atob(payloadBase64));
+  
+        if (decodedPayload.company_name) {
+          setCompanyName(decodedPayload.company_name);
         }
       } catch (e) {
-        console.error("Failed to parse user data from localStorage", e);
+        console.error("Failed to decode JWT token", e);
       }
     }
   }, []);
@@ -169,7 +173,7 @@ export function Layout({ children, activeModule, onModuleChange, onLogout }: Lay
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{companyName}</span>
-                <span className="truncate text-xs">Kenyan Supermarket Chain</span>
+                <span className="truncate text-xs">ERP System</span>
               </div>
             </div>
           </SidebarHeader>
