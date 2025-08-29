@@ -29,7 +29,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost:5173',
     '127.0.0.1:5173',
-    'murimart.localhost',  
+    'murimart.localhost', 
+    '127.0.0.1', 
 ]
 # Application definition
 

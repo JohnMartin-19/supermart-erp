@@ -25,6 +25,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        token['username'] = user.username
+        token['company_name'] = getattr(user, 'company_name',None)
+        token ['phone_number'] = getattr(user, 'phone_number', None)
         token['tenant_schema'] = connection.schema_name
 
         return token
+    
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data.update({
+            'username': self.user.username,
+            'company_name': getattr(self.user, "company_name", None),
+            'phone_number': getattr(self.user, "phone_number", None),
+        })
+        return data

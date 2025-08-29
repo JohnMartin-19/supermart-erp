@@ -19,7 +19,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
 
 // Define the structure of an inventory item
@@ -39,13 +39,12 @@ interface Product {
   name: string;
   sku: string;
   categories: string;
-  supplier: string; // Assuming a string name from the API
+  supplier: string;
   price: string;
   inventory: InventoryItem[];
   stock_status: string;
   tenant: number;
 }
-
 
 export function Inventory() {
   const [selectedTab, setSelectedTab] = useState('products');
@@ -53,40 +52,54 @@ export function Inventory() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalInventoryValue, setTotalInventoryValue] = useState(0);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // State for the new product form
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    sku: '',
+    categories: '',
+    supplier: '',
+    price: '',
+    current_stock: 0,
+    min_stock: 0,
+    max_stock: 0,
+  });
 
-  // You will need a way to get the access token, e.g., from local storage
   const accessToken = localStorage.getItem('access_token');
 
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    setError(null);
+    if (!accessToken) {
+      setError("Authentication token not found. Please log in.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('http://murimart.localhost:8000/api/v1/inventory/products/', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch products. Please check the network or API endpoint.');
+      }
+
+      const data = await response.json();
+      setProducts(data);
+    } catch (err: any) {
+      console.error("Error fetching products:", err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      if (!accessToken) {
-        setError("Authentication token not found. Please log in.");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/inventory/products/', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch products. Please check the network or API endpoint.');
-        }
-
-        const data = await response.json();
-        setProducts(data);
-      } catch (err: any) {
-        console.error("Error fetching products:", err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProducts();
   }, [accessToken]);
 
@@ -105,6 +118,86 @@ export function Inventory() {
       calculateTotalValue();
     }
   }, [products]);
+
+  // Handle input changes for the new product form
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setNewProduct(prev => ({
+      ...prev,
+      [id]: id === 'current_stock' || id === 'min_stock' || id === 'max_stock' ? parseInt(value) : value,
+    }));
+  };
+
+  // Handle select changes for the new product form
+  const handleSelectChange = (id: string, value: string) => {
+    setNewProduct(prev => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  // Handle the POST request to add a new product
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (!accessToken) {
+      setError("Authentication token not found. Please log in.");
+      setIsLoading(false);
+      return;
+    }
+
+    const payload = {
+      name: newProduct.name,
+      sku: newProduct.sku,
+      categories: newProduct.categories,
+      supplier: newProduct.supplier,
+      price: newProduct.price,
+      inventory: [{
+        current_stock: newProduct.current_stock,
+        min_stock: newProduct.min_stock,
+        max_stock: newProduct.max_stock,
+      }]
+    };
+
+    try {
+      const response = await fetch('http://murimart.localhost:8000/api/v1/inventory/products/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to add product. Please try again.');
+      }
+
+      // If successful, re-fetch products to update the list
+      await fetchProducts();
+
+      // Close the dialog and clear the form
+      setIsDialogOpen(false);
+      setNewProduct({
+        name: '',
+        sku: '',
+        categories: '',
+        supplier: '',
+        price: '',
+        current_stock: 0,
+        min_stock: 0,
+        max_stock: 0,
+      });
+
+    } catch (err: any) {
+      console.error("Error adding product:", err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Mock data for other tabs will remain unchanged for now
   const orders = [
@@ -127,6 +220,7 @@ export function Inventory() {
   };
 
   const getStockPercentage = (current: number, max: number) => {
+    if (max === 0) return 0;
     return (current / max) * 100;
   };
 
@@ -142,9 +236,9 @@ export function Inventory() {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={() => setIsDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
               </Button>
@@ -153,65 +247,110 @@ export function Inventory() {
               <DialogHeader>
                 <DialogTitle>Add New Product</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <form onSubmit={handleAddProduct} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Product Name</Label>
-                    <Input id="name" placeholder="Enter product name" />
+                    <Input 
+                      id="name" 
+                      placeholder="Enter product name" 
+                      value={newProduct.name}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div>
                     <Label htmlFor="sku">SKU</Label>
-                    <Input id="sku" placeholder="Enter SKU" />
+                    <Input 
+                      id="sku" 
+                      placeholder="Enter SKU" 
+                      value={newProduct.sku}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Select>
+                    <Label htmlFor="categories">Category</Label>
+                    <Select onValueChange={(value) => handleSelectChange('categories', value)} value={newProduct.categories}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="electronics">Electronics</SelectItem>
-                        <SelectItem value="accessories">Accessories</SelectItem>
-                        <SelectItem value="furniture">Furniture</SelectItem>
+                        <SelectItem value="Electronics">Electronics</SelectItem>
+                        <SelectItem value="Accessories">Accessories</SelectItem>
+                        <SelectItem value="Furniture">Furniture</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label htmlFor="supplier">Supplier</Label>
-                    <Select>
+                    <Select onValueChange={(value) => handleSelectChange('supplier', value)} value={newProduct.supplier}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select supplier" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="tech-supplies">Tech Supplies Co.</SelectItem>
-                        <SelectItem value="cable-world">Cable World</SelectItem>
-                        <SelectItem value="desk-solutions">Desk Solutions</SelectItem>
+                        <SelectItem value="Tech Supplies Co.">Tech Supplies Co.</SelectItem>
+                        <SelectItem value="Cable World">Cable World</SelectItem>
+                        <SelectItem value="Desk Solutions">Desk Solutions</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="current">Current Stock</Label>
-                    <Input id="current" type="number" placeholder="0" />
+                    <Label htmlFor="current_stock">Current Stock</Label>
+                    <Input 
+                      id="current_stock" 
+                      type="number" 
+                      placeholder="0" 
+                      value={newProduct.current_stock}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div>
-                    <Label htmlFor="min">Min Stock</Label>
-                    <Input id="min" type="number" placeholder="0" />
+                    <Label htmlFor="min_stock">Min Stock</Label>
+                    <Input 
+                      id="min_stock" 
+                      type="number" 
+                      placeholder="0" 
+                      value={newProduct.min_stock}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div>
-                    <Label htmlFor="max">Max Stock</Label>
-                    <Input id="max" type="number" placeholder="0" />
+                    <Label htmlFor="max_stock">Max Stock</Label>
+                    <Input 
+                      id="max_stock" 
+                      type="number" 
+                      placeholder="0" 
+                      value={newProduct.max_stock}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="price">Price</Label>
-                  <Input id="price" type="number" placeholder="0" />
+                  <Input 
+                    id="price" 
+                    type="number" 
+                    placeholder="0" 
+                    value={newProduct.price}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
-                <Button className="w-full">Add Product</Button>
-              </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                    Add Product
+                  </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -227,7 +366,6 @@ export function Inventory() {
           <CardContent>
             <div className="text-2xl font-bold">{products.length}</div>
             <p className="text-xs text-muted-foreground">
-              {/* This stat might need to be fetched from a different API endpoint */}
               <span className="text-green-500">+12</span> from last month
             </p>
           </CardContent>
@@ -345,7 +483,6 @@ export function Inventory() {
                           <TableCell className="font-medium">{product.name}</TableCell>
                           <TableCell>{product.sku}</TableCell>
                           <TableCell>{product.categories}</TableCell>
-                          {/* Accessing nested inventory data */}
                           <TableCell>
                             {product.inventory.length > 0 ? product.inventory[0].current_stock : 'N/A'}
                           </TableCell>

@@ -13,7 +13,7 @@ class ProductListCreateAPIView(APIView):
     """
     def get(self, request):
         products = Product.objects.all()
-        serializer = productSerializer(products, many = True)
+        serializer = ProductSerializer(products, many = True)
         return Response(serializer.data, status = status.HTTP_200_OK)
         
     """
@@ -21,9 +21,21 @@ class ProductListCreateAPIView(APIView):
     """
     
     def post(self, request):
-        serializer = productSerializer(data = request.data)
+        serializer = ProductSerializer(data = request.data)
+        data = request.data
+        print("DATA...:", data)
         if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
+            product = serializer.save(tenant = request.user.tenant)
+            if not product.inventory_set.exists():
+                Inventory.objects.create(
+                    product=product,
+                    branch=None,
+                    current_stock=0,
+                    min_stock=0,
+                    max_stock=0,
+                    tenant=product.tenant
+                )
+
             return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
@@ -42,7 +54,7 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
     
     def get(self, request, pk):
         product = self.get_object(pk)
-        serializer = productSerializer(product)
+        serializer = ProductSerializer(product)
         return Response(serializer.data, status =status.HTTP_200_OK)
     
     """
@@ -51,7 +63,7 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self, request, pk):
         product = self.get_object(pk)
-        serializer = productSerializer(product, data = request.data,partial =True)
+        serializer = ProductSerializer(product, data = request.data,partial =True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -61,7 +73,7 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
     DELETE METHOD: To delete a product instance
     """
     
-    def delete(self, pk):
+    def delete(self, request, pk, *args, **kwargs):
         product = self.get_object(pk)
         product.delete()
         return Response({"message":"Product deleted"},status = status.HTTP_204_NO_CONTENT)
