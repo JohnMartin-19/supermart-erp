@@ -1,16 +1,8 @@
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
 
-
 class Tenant(TenantMixin):
     name = models.CharField(max_length=100,blank=False, null=False)
-    owner = models.ForeignKey(
-        "authentication.User", 
-        on_delete=models.CASCADE,
-        related_name="owned_tenant",
-        null=True,
-        blank=True
-    )
     contact_person = models.CharField(max_length=100,null=False, blank=False)
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(blank = False, null=False)
