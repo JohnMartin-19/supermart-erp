@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 SHARED_APPS = (
     'django_tenants',
     'tenants',
+    'authentication',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
