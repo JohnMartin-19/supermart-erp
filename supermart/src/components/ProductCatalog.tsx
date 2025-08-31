@@ -57,12 +57,12 @@ export function ProductCatalog() {
   });
   const [isAdding, setIsAdding] = useState(false);
   const [addProductError, setAddProductError] = useState<string | null>(null);
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   // Fetching products from the API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/products/products/`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -163,7 +163,7 @@ export function ProductCatalog() {
     };
 
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/products/products/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,8 +179,8 @@ export function ProductCatalog() {
 
       const addedProduct = await response.json();
       setProducts(prevProducts => [...prevProducts, addedProduct]);
-      setIsAddProductOpen(false); // Close the dialog
-      setNewProduct({ // Reset the form
+      setIsAddProductOpen(false); 
+      setNewProduct({ 
         name: '',
         barcode: '',
         category: '',

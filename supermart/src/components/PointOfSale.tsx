@@ -43,7 +43,7 @@ export function PointOfSale() {
   const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -56,7 +56,7 @@ export function PointOfSale() {
       }
 
       try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/products/products/`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
           },
@@ -93,7 +93,7 @@ export function PointOfSale() {
       setCart([...cart, {
         id: product.id,
         name: product.name,
-        price: sellingPrice, // Use the parsed selling_price
+        price: sellingPrice, 
         quantity: 1,
         barcode: product.barcode,
         category: product.category,

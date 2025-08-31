@@ -73,12 +73,12 @@ export function CustomerManagement() {
   const [isAdding, setIsAdding] = useState(false);
   const [addCustomerError, setAddCustomerError] = useState<string | null>(null);
   const [addCustomerSuccess, setAddCustomerSuccess] = useState(false);
-
+  const tenantDomain = localStorage.getItem("tenant_domain")
   const fetchCustomers = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/customers/customers/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/customers/customers/`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -123,10 +123,10 @@ export function CustomerManagement() {
         address: newCustomer.address,
         // Convert the string tier from the form to the numerical ID for the backend
         membership_tier: tierMap[newCustomer.membership_tier as keyof typeof tierMap],
-        // You may need to add other required fields with default values, like 'is_active'
+       
       };
 
-      const response = await fetch('http://murimart.localhost:8000/api/v1/customers/customers/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/customers/customers/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

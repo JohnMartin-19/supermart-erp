@@ -34,10 +34,10 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
 
   const tenantDomain = localStorage.getItem('tenant_domain');
   
-    if (!tenantDomain) {
-        window.location.href = '/login'
-        return;
-    }
+    // if (!tenantDomain) {
+    //     window.location.href = '/login'
+    //     return;
+    // }
 
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
@@ -87,7 +87,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
   const stats = [
     {
       title: 'Total Revenue',
-      value: 'KSH 12,34,567',
+      value: 'KSH 104',
       change: '+12.5%',
       trend: 'up',
       icon: DollarSign,
