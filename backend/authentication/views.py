@@ -24,7 +24,7 @@ class RegisterAPIView(APIView):
             password = request.data.get('password')
             username = request.data.get("username")
             first_name = request.data.get('first_name')
-            last_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
 
             with schema_context("public"):
                 tenant = Tenant.objects.create(
@@ -39,19 +39,23 @@ class RegisterAPIView(APIView):
                     is_primary=True
                 )
 
-              
-                user = User.objects.create_user(
-                    username=username, 
-                    email=email, 
-                    password=password,
-                    tenant=tenant,
-                    phone_number = phone_number,
-                    first_name = first_name,
-                    last_name = last_name
-                )
-                tenant.owner = user
-                tenant.save()
-
+                with schema_context(tenant.schema_name):
+                    
+                    user = User.objects.create_user(
+                        username=username, 
+                        email=email, 
+                        password=password,
+                        tenant=tenant,
+                        phone_number = phone_number,
+                        first_name = first_name,
+                        last_name = last_name,
+                        company_name = company_name
+                        
+                    )
+                with schema_context("public"):
+                        tenant.owner = user
+                        tenant.save()
+                
             return Response(
                 {"message": f"Tenant {company_name} and user {email} created successfully"},
                 status=status.HTTP_201_CREATED

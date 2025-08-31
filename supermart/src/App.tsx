@@ -169,29 +169,34 @@ export default function App() {
     setIsAuthLoading(true);
     setAuthError('');
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, username, password }),
-      });
+        const response = await fetch('http://127.0.0.1:8000/api/v1/authentication/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, username, password }),
+        });
 
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-        setIsLoggedIn(true);
-      } else {
-        setAuthError(data.detail || 'Login failed. Please check your credentials.');
-      }
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+
+           
+            const tenantDomain = data.tenant_domain; 
+            localStorage.setItem('tenant_domain', tenantDomain);
+
+            setIsLoggedIn(true);
+        } else {
+            setAuthError(data.detail || 'Login failed. Please check your credentials.');
+        }
     } catch (error) {
-      setAuthError('An error occurred. Please try again later.');
-      console.error('Login error:', error);
+        setAuthError('An error occurred. Please try again later.');
+        console.error('Login error:', error);
     } finally {
-      setIsAuthLoading(false);
+        setIsAuthLoading(false);
     }
-  };
+};
 
   const handleSignUp = async (userData: any) => {
     setIsAuthLoading(true); 
