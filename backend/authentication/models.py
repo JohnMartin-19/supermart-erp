@@ -10,6 +10,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     username = models.CharField(max_length=100,null=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=100, null =False, blank=False)
+    domain = models.CharField(max_length=255, blank=True, null=True)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True,related_name='users')
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     company_name = models.CharField(max_length=255, blank=True, null=True)

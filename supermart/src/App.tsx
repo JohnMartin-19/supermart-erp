@@ -165,11 +165,53 @@ export default function App() {
         );
     }
   };
+  const handleSignUp = async (userData: any) => {
+    setIsAuthLoading(true); 
+    setShowDelayOverlay(true); 
+    setAuthError('');
+
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/v1/authentication/register/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+
+        const data = await response.json();
+        const tenant = data.tenant_domain
+        if(tenant){
+          localStorage.setItem('tenant_domain', tenant)
+        }
+        if (response.ok) {
+            
+            setTimeout(() => {
+                setShowDelayOverlay(false); 
+                toast.success('Account created successfully!', {
+                    description: 'You can now log in with your new credentials.',
+                });
+                setShowSignup(false); 
+            }, 5000); 
+        } else {
+            setAuthError(data.detail || 'Registration failed. Please try again.');
+            setShowDelayOverlay(false); 
+        }
+    } catch (error) {
+        setAuthError('An error occurred. Please try again later.');
+        console.error('Registration error:', error);
+        setShowDelayOverlay(false); 
+    } finally {
+        setIsAuthLoading(false); 
+    }
+  };
+
   const handleLogin = async (email: string, username: string, password: string) => {
     setIsAuthLoading(true);
     setAuthError('');
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/v1/authentication/login/', {
+        const tenantDomain = localStorage.getItem('tenant_domain')
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/authentication/login/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -198,42 +240,7 @@ export default function App() {
     }
 };
 
-  const handleSignUp = async (userData: any) => {
-    setIsAuthLoading(true); 
-    setShowDelayOverlay(true); 
-    setAuthError('');
-
-    try {
-        const response = await fetch('http://127.0.0.1:8000/api/v1/authentication/register/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            
-            setTimeout(() => {
-                setShowDelayOverlay(false); 
-                toast.success('Account created successfully!', {
-                    description: 'You can now log in with your new credentials.',
-                });
-                setShowSignup(false); 
-            }, 5000); 
-        } else {
-            setAuthError(data.detail || 'Registration failed. Please try again.');
-            setShowDelayOverlay(false); 
-        }
-    } catch (error) {
-        setAuthError('An error occurred. Please try again later.');
-        console.error('Registration error:', error);
-        setShowDelayOverlay(false); 
-    } finally {
-        setIsAuthLoading(false); 
-    }
-  };
+  
 
   const handleLogout = async () => {
     setIsLogoutLoading(true); 

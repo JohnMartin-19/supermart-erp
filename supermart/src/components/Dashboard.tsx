@@ -32,6 +32,13 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const tenantDomain = localStorage.getItem('tenant_domain');
+  
+    if (!tenantDomain) {
+        window.location.href = '/login'
+        return;
+    }
+
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) {
@@ -49,9 +56,9 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
 
       try {
         const [customersRes, inventoriesRes, invoicesRes] = await Promise.all([
-          fetch('http://murimart.localhost:8000/api/v1/customers/customers/', { headers }),
-          fetch('http://murimart.localhost:8000/api/v1/inventory/inventories/', { headers }),
-          fetch('http://murimart.localhost:8000/api/v1/invoice/quick_invoices/', { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/customers/customers/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/inventory/inventories/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/invoice/quick_invoices/`, { headers }),
         ]);
 
         if (!customersRes.ok || !inventoriesRes.ok || !invoicesRes.ok) {

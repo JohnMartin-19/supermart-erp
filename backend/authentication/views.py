@@ -26,10 +26,13 @@ class RegisterAPIView(APIView):
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
 
+            
+            schema_name = company_name.lower().replace(" ", "")
+            tenant_domain = f"{schema_name}.localhost"
             with schema_context("public"):
                 tenant = Tenant.objects.create(
                     name=company_name,
-                    schema_name=company_name.lower(),
+                    schema_name=schema_name,
                     paid_until="2026-01-01",
                     on_trial=True,
                 )
@@ -49,7 +52,8 @@ class RegisterAPIView(APIView):
                         phone_number = phone_number,
                         first_name = first_name,
                         last_name = last_name,
-                        company_name = company_name
+                        company_name = company_name,
+                        domain = tenant_domain
                         
                     )
                 with schema_context("public"):
@@ -57,15 +61,35 @@ class RegisterAPIView(APIView):
                         tenant.save()
                 
             return Response(
-                {"message": f"Tenant {company_name} and user {email} created successfully"},
+                {"message": f"Tenant {company_name} and user {email} created successfully", "tenant_domain": tenant_domain},
+                
                 status=status.HTTP_201_CREATED
             )
 
     
 class LoginAPIView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-        
-        
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.user
+ 
+        response = super().post(request, *args, **kwargs)
+
+        tenant_domain = None  
+
+        if user.tenant_id:
+            # 3. Switch to the 'public' schema to query for the domain
+            with schema_context('public'):
+                try:
+                    # Use the tenant_id to get the domain from the public schema
+                    domain = Domain.objects.get(tenant_id=user.tenant_id, is_primary=True)
+                    tenant_domain = domain.domain
+                except Domain.DoesNotExist:
+                    pass
+
+        # 4. Add the retrieved domain to the response
+        response.data['tenant_domain'] = tenant_domain
+        return response
     
 class LogoutAPIView(APIView):
     def post(self, request) :
