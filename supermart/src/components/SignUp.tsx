@@ -110,7 +110,6 @@ export function SignUp({ onSignUp, onSwitchToLogin, isLoading = false, error }: 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Pass the complete user data, including the confirmed password
       onSignUp({ ...formData });
     }
   };

@@ -14,12 +14,17 @@ from django_tenants.utils import schema_context
 
 class RegisterAPIView(APIView):
     def post(self, request):
+        data = request.data
+        print("DATATAAT:", data)
         with transaction.atomic():
             company_name = request.data.get("company_name")
             domain_url = request.data.get("domain_url")
             email = request.data.get("email")
             phone_number = request.data.get("phone_number")
             password = request.data.get('password')
+            username = request.data.get("username")
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('first_name')
 
             with schema_context("public"):
                 tenant = Tenant.objects.create(
@@ -36,10 +41,13 @@ class RegisterAPIView(APIView):
 
               
                 user = User.objects.create_user(
-                    username=email, 
+                    username=username, 
                     email=email, 
                     password=password,
-                    tenant=tenant
+                    tenant=tenant,
+                    phone_number = phone_number,
+                    first_name = first_name,
+                    last_name = last_name
                 )
                 tenant.owner = user
                 tenant.save()

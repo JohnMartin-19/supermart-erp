@@ -194,12 +194,12 @@ export default function App() {
   };
 
   const handleSignUp = async (userData: any) => {
-    setIsAuthLoading(true); // Start API loading state
-    setShowDelayOverlay(true); // Start showing the intentional delay overlay
+    setIsAuthLoading(true); 
+    setShowDelayOverlay(true); 
     setAuthError('');
 
     try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/authentication/register/', {
+        const response = await fetch('http://127.0.0.1:8000/api/v1/authentication/register/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
