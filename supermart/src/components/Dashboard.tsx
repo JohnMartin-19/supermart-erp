@@ -29,15 +29,11 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [totalInventories, setTotalInventories] = useState(0);
   const [totalInvoices, setTotalInvoices] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0); // Added state for total revenue
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const tenantDomain = localStorage.getItem('tenant_domain');
-  
-    // if (!tenantDomain) {
-    //     window.location.href = '/login'
-    //     return;
-    // }
 
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
@@ -73,6 +69,13 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
         setTotalInventories(inventoriesData.length);
         setTotalInvoices(invoicesData.length);
 
+        // Calculate total revenue from invoices
+        const calculatedRevenue = invoicesData.reduce((sum: number, invoice: any) => {
+          // Ensure total_amount is a number before adding
+          return sum + (invoice.total_amount ? parseFloat(invoice.total_amount) : 0);
+        }, 0);
+        setTotalRevenue(calculatedRevenue);
+
       } catch (err: any) {
         console.error("Error fetching dashboard data:", err);
         setError("Failed to load dashboard data. Please try again later.");
@@ -82,12 +85,12 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
     };
 
     fetchData();
-  }, []);
+  }, [tenantDomain]);
 
   const stats = [
     {
       title: 'Total Revenue',
-      value: 'KSH 104',
+      value: isLoading ? '...' : `KSH ${totalRevenue.toLocaleString()}`, // Use new state here
       change: '+12.5%',
       trend: 'up',
       icon: DollarSign,

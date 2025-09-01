@@ -77,7 +77,7 @@ export function SupplierManagement() {
   const [isCreating, setIsCreating] = useState(false);
   const [createOrderError, setCreateOrderError] = useState<string | null>(null);
   const [createOrderSuccess, setCreateOrderSuccess] = useState(false);
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([
     {
       id: 'PO-001',
@@ -119,7 +119,7 @@ export function SupplierManagement() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/suppliers/suppliers/`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -143,7 +143,7 @@ export function SupplierManagement() {
   useEffect(() => {
     fetchSuppliers();
   }, []);
-
+  
   const handleAddSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAdding(true);
@@ -157,7 +157,7 @@ export function SupplierManagement() {
         is_active: true,
       };
 
-      const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/suppliers/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/suppliers/suppliers/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ export function SupplierManagement() {
         items: validItems,
       };
 
-      const response = await fetch('http://murimart.localhost:8000/api/v1/suppliers/purchase_orders/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/suppliers/purchase_orders/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -283,7 +283,39 @@ export function SupplierManagement() {
     setNewOrder({ ...newOrder, items: updatedItems });
   };
 
-  const categories = ['all', 'Fresh Produce', 'Dairy Products', 'Grains & Cereals', 'Beverages', 'Household Items'];
+  const categories = [
+    'dairy',
+    'meat',
+    'fruits',
+    'vegetables',
+    'grains',
+    'nuts',
+    'spices',
+    'pasta',
+    'canned_goods',
+    'baking_supplies',
+    'snacks',
+    'pet_food',
+    'household_items',
+    'beverages',
+    'personal_care',
+    'baby_care',
+    'pet_care',
+    'office_supplies',
+    'arts_and_crafts',
+    'books_and_media',
+    'sports_equipment',
+    'musical_instruments',
+    'outdoor_equipment',
+    'tools',
+    'furniture',
+    'home_decor',
+    'garden_supplies',
+    'garage_and_storage',
+    'auto_parts',
+    'vintage_and_collectibles',
+    'other'
+  ];
 
   const filteredSuppliers = suppliers.filter(supplier => {
     const matchesSearch = supplier.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -89,7 +89,7 @@ export function QuickBilling() {
   const [recentBills, setRecentBills] = useState<any[]>([]);
   const [isFetchingRecent, setIsFetchingRecent] = useState(false);
   const [recentBillsError, setRecentBillsError] = useState<string | null>(null);
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   const addItem = () => {
     const newItem: BillItem = {
       id: Date.now().toString(),
@@ -160,7 +160,7 @@ export function QuickBilling() {
     };
 
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/billing/bills/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/billing/bills/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ export function QuickBilling() {
         setIsFetchingRecent(true);
         setRecentBillsError(null);
         try {
-          const response = await fetch('http://murimart.localhost:8000/api/v1/billing/bills/', {
+          const response = await fetch(`http://${tenantDomain}:8000/api/v1/billing/bills/`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             },

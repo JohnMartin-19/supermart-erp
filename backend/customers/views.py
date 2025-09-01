@@ -21,6 +21,8 @@ class CustomerListCreateAPIView(APIView):
         POST METHOD: To create a new customer
     """
     def post(self, request):
+        data = request.data 
+        print('DATATARTAR:',data)
         serializer = CustomerSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant=request.user.tenant)

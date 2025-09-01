@@ -54,7 +54,7 @@ export function QuickInvoice() {
       amount: 0
     }
   ]);
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Date.now()}`);
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
@@ -120,7 +120,7 @@ export function QuickInvoice() {
     };
 
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/invoice/quick_invoices/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/invoice/quick_invoices/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

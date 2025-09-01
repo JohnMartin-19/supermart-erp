@@ -12,7 +12,6 @@ import { Switch } from './ui/switch';
 import { Package, Plus, Search, Filter, Edit, Trash2, AlertTriangle, TrendingUp, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-
 interface Product {
   id: string;
   name: string;
@@ -31,10 +30,16 @@ interface Product {
   unit: string;
 }
 
+interface Supplier {
+  id: string;
+  name: string;
+}
+
 export function ProductCatalog() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState<Product[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]); // New state for suppliers
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -57,25 +62,32 @@ export function ProductCatalog() {
   });
   const [isAdding, setIsAdding] = useState(false);
   const [addProductError, setAddProductError] = useState<string | null>(null);
-  const tenantDomain = localStorage.getItem('tenant_domain')
-  // Fetching products from the API
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(`http://${tenantDomain}:8000/api/v1/products/products/`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
+  const tenantDomain = localStorage.getItem('tenant_domain');
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Failed to fetch products.');
+  // Fetching products and suppliers from their APIs
+  useEffect(() => {
+    const fetchProductsAndSuppliers = async () => {
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        };
+
+        const [productsRes, suppliersRes] = await Promise.all([
+          fetch(`http://${tenantDomain}:8000/api/v1/products/products/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/suppliers/suppliers/`, { headers }),
+        ]);
+
+        if (!productsRes.ok || !suppliersRes.ok) {
+          const errorData = await (productsRes.ok ? suppliersRes : productsRes).json();
+          throw new Error(errorData.detail || 'Failed to fetch data.');
         }
 
-        const data = await response.json();
-        setProducts(data);
+        const productsData = await productsRes.json();
+        const suppliersData = await suppliersRes.json();
+        
+        setProducts(productsData);
+        setSuppliers(suppliersData);
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
       } finally {
@@ -83,15 +95,43 @@ export function ProductCatalog() {
       }
     };
 
-    fetchProducts();
-  }, []);
+    fetchProductsAndSuppliers();
+  }, [tenantDomain]);
 
-  const categories = ['all', 'dairy', 'meat', 'fruits', 'vegetables', 'grains', 'nuts', 'spices',
-     'pasta', 'canned goods', 'baking supplies', 'snacks', 'pet food', 'household items',
-     'beverages', 'personal care', 'baby care', 'pet care', 'office supplies', 'arts and crafts',
-     'books and media', 'sports equipment', 'musical instruments', 'outdoor equipment', 'tools',
-     'furniture', 'home decor', 'garden supplies', 'garage and storage', 'auto parts',
-     'vintage and collectibles', 'other'];
+  const categories = [
+    'all',
+    'dairy',
+    'meat',
+    'fruits',
+    'vegetables',
+    'grains',
+    'nuts',
+    'spices',
+    'pasta',
+    'canned_goods',
+    'baking_supplies',
+    'snacks',
+    'pet_food',
+    'household_items',
+    'beverages',
+    'personal_care',
+    'baby_care',
+    'pet_care',
+    'office_supplies',
+    'arts_and_crafts',
+    'books_and_media',
+    'sports_equipment',
+    'musical_instruments',
+    'outdoor_equipment',
+    'tools',
+    'furniture',
+    'home_decor',
+    'garden_supplies',
+    'garage_and_storage',
+    'auto_parts',
+    'vintage_and_collectibles',
+    'other'
+  ];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -146,6 +186,13 @@ export function ProductCatalog() {
     setNewProduct(prev => ({
       ...prev,
       category: value
+    }));
+  };
+
+  const handleSupplierSelectChange = (value: string) => {
+    setNewProduct(prev => ({
+      ...prev,
+      supplier: value,
     }));
   };
 
@@ -277,7 +324,18 @@ export function ProductCatalog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="supplier">Supplier</Label>
-                <Input id="supplier" placeholder="Enter supplier name" value={newProduct.supplier} onChange={handleInputChange} />
+                <Select value={newProduct.supplier} onValueChange={handleSupplierSelectChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select supplier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map(supplier => (
+                      <SelectItem key={supplier.id} value={supplier.name}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cost_price">Cost Price (KES)</Label>

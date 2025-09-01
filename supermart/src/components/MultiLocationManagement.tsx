@@ -55,7 +55,7 @@ export function MultiLocationManagement() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [stockTransfers, setStockTransfers] = useState<StockTransfer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   // Loading and error states
   const [isLoadingBranches, setIsLoadingBranches] = useState(true);
   const [loadingBranchesError, setLoadingBranchesError] = useState<string | null>(null);
@@ -109,7 +109,7 @@ export function MultiLocationManagement() {
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/branches/', {
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/multi_location/branches/`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -133,7 +133,7 @@ export function MultiLocationManagement() {
   useEffect(() => {
     const fetchStockTransfers = async () => {
       try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/stock_transfers/', {
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/multi_location/stock_transfers/`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -157,7 +157,7 @@ export function MultiLocationManagement() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/products/products/', {
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/products/products/`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -201,7 +201,7 @@ export function MultiLocationManagement() {
         notes: newTransfer.reason,
       };
 
-      const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/stock_transfers/', {
+      const response = await fetch(`http://{tenantDomain}:8000/api/v1/multi_location/stock_transfers/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +252,7 @@ export function MultiLocationManagement() {
     }
 
     try {
-        const response = await fetch('http://murimart.localhost:8000/api/v1/multi_location/branches/', {
+        const response = await fetch(`http://{tenantDomain}:8000/api/v1/multi_location/branches/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

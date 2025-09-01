@@ -53,7 +53,7 @@ export function CashManagement() {
   const [selectedDate, setSelectedDate] = useState('today');
   const [isReconcileOpen, setIsReconcileOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
-
+  const tenantDomain = localStorage.getItem("tenant_domain")
   // States for fetched data
   const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
   const [cashExpenses, setCashExpenses] = useState<ExpenseData[]>([]);
@@ -117,13 +117,13 @@ export function CashManagement() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const drawersResponse = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_drawers/', {
+        const drawersResponse = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_drawers/`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           },
         });
-        const expensesResponse = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_expenses/', {
+        const expensesResponse = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_expenses/`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -164,7 +164,7 @@ export function CashManagement() {
         description: newExpense.description,
       };
 
-      const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_expenses/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_expenses/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export function CashManagement() {
         notes: reconciliation.notes,
       };
 
-      const response = await fetch('http://murimart.localhost:8000/api/v1/cash/cash_reconciliations/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_reconciliations/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
