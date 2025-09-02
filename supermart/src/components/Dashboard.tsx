@@ -248,7 +248,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
               <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-2xl font-bold text-red-600">{stat.value}</div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 {stat.trend === 'up' ? (
                   <TrendingUp className="h-3 w-3 text-green-500" />

@@ -27,7 +27,8 @@ class CustomerListCreateAPIView(APIView):
         if serializer.is_valid():
             serializer.save(tenant=request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors)
+        print("Serializer Errors:", serializer.errors)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
         
         
         
@@ -69,3 +70,8 @@ class CustomerRetrieveUpdateDestroyAPIView(APIView):
         customer = self.get_object(pk)
         customer.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MembershipTierAPIView(APIView):
+    def get(self, request):
+        pass

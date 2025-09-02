@@ -31,12 +31,12 @@ interface TransformedCustomer extends Omit<Customer, 'membership_tier'> {
 }
 
 // A mapping from string tier names to their numerical IDs for POST requests
-const tierMap = {
-  regular: 1,
-  silver: 2,
-  gold: 3,
-  platinum: 4,
-};
+// const tierMap = {
+//   regular: 1,
+//   silver: 2,
+//   gold: 3,
+//   platinum: 4,
+// };
 
 // Helper function to map numerical tiers to string names for the UI
 const mapTierNumberToString = (tierNumber: number): 'regular' | 'silver' | 'gold' | 'platinum' => {
@@ -122,7 +122,7 @@ export function CustomerManagement() {
         email: newCustomer.email,
         address: newCustomer.address,
         // Convert the string tier from the form to the numerical ID for the backend
-        membership_tier: tierMap[newCustomer.membership_tier as keyof typeof tierMap],
+        membership_tier: newCustomer.membership_tier,
        
       };
 
