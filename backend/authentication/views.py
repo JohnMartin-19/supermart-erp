@@ -11,7 +11,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import transaction
 from django.utils.text import slugify
 from django_tenants.utils import schema_context
-
+from tenants.serializers import *
+from tenants.models import *
 class RegisterAPIView(APIView):
     def post(self, request):
         data = request.data
@@ -56,6 +57,11 @@ class RegisterAPIView(APIView):
                         domain = tenant_domain
                         
                     )
+                    ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                        action_type='customer_added',
+                        message=f'Your account was created and set up gracefully! "{user.username}" added.'
+            )
                 with schema_context("public"):
                         tenant.owner = user
                         tenant.save()

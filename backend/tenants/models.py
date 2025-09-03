@@ -36,6 +36,7 @@ class ActivityLogs(models.Model):
         ('invoice_created', 'Invoice Created'),
         ('payment_received', 'Payment Received'),
         ('customer_added', 'Customer Added'),
+        ('user_added', 'User Added'),
         ('inventory_alert', 'Inventory Alert'),
         ('tax_filed', 'Tax Filed'),
         ('payroll_processed', 'Payroll Processed'),
