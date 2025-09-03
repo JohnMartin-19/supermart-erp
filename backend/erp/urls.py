@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/v1/suppliers/',include('suppliers.urls')),
     path("api/v1/multi_location/", include('multi_location.urls')),
     path('api/v1/cash/', include('cash_management.urls')),
+    path('api/v1/activities/', include('tenants.urls')),
     
     #quick paths
     path('api/v1/invoice/', include('invoice.urls')),
