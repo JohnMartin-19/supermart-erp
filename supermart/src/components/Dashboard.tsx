@@ -25,13 +25,22 @@ interface DashboardProps {
   onQuickPayment?: () => void;
 }
 
+interface Activity {
+  id: number;
+  action_type: string;
+  message: string;
+  timestamp: string;
+  tenant: number;
+}
+
 export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQuickPayment }: DashboardProps) {
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [totalInventories, setTotalInventories] = useState(0);
   const [totalInvoices, setTotalInvoices] = useState(0);
-  const [totalRevenue, setTotalRevenue] = useState(0); // Added state for total revenue
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
 
   const tenantDomain = localStorage.getItem('tenant_domain');
 
@@ -51,27 +60,28 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
       };
 
       try {
-        const [customersRes, inventoriesRes, invoicesRes] = await Promise.all([
+        const [customersRes, inventoriesRes, invoicesRes, activitiesRes] = await Promise.all([
           fetch(`http://${tenantDomain}:8000/api/v1/customers/customers/`, { headers }),
           fetch(`http://${tenantDomain}:8000/api/v1/inventory/inventories/`, { headers }),
           fetch(`http://${tenantDomain}:8000/api/v1/invoice/quick_invoices/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/activities/recent_activities/`, { headers }),
         ]);
 
-        if (!customersRes.ok || !inventoriesRes.ok || !invoicesRes.ok) {
+        if (!customersRes.ok || !inventoriesRes.ok || !invoicesRes.ok || !activitiesRes.ok) {
           throw new Error('Failed to fetch data from one or more endpoints.');
         }
 
         const customersData = await customersRes.json();
         const inventoriesData = await inventoriesRes.json();
         const invoicesData = await invoicesRes.json();
+        const activitiesData = await activitiesRes.json();
 
         setTotalCustomers(customersData.length);
         setTotalInventories(inventoriesData.length);
         setTotalInvoices(invoicesData.length);
+        setRecentActivities(activitiesData);
 
-        // Calculate total revenue from invoices
         const calculatedRevenue = invoicesData.reduce((sum: number, invoice: any) => {
-          // Ensure total_amount is a number before adding
           return sum + (invoice.total_amount ? parseFloat(invoice.total_amount) : 0);
         }, 0);
         setTotalRevenue(calculatedRevenue);
@@ -90,7 +100,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
   const stats = [
     {
       title: 'Total Revenue',
-      value: isLoading ? '...' : `KSH ${totalRevenue.toLocaleString()}`, // Use new state here
+      value: isLoading ? '...' : `KSH ${totalRevenue.toLocaleString()}`,
       change: '+12.5%',
       trend: 'up',
       icon: DollarSign,
@@ -116,14 +126,6 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
       trend: 'up',
       icon: FileText,
     },
-  ];
-
-  const recentActivities = [
-    { id: 1, type: 'invoice', message: 'Invoice #INV-001 created for ABC Corp', time: '2 mins ago', status: 'success' },
-    { id: 2, type: 'payment', message: 'Payment received from XYZ Ltd - KSH 50,000', time: '15 mins ago', status: 'success' },
-    { id: 3, type: 'inventory', message: 'Low stock alert: Product A (10 units left)', time: '1 hour ago', status: 'warning' },
-    { id: 4, type: 'tax', message: 'VAT return filed successfully', time: '2 hours ago', status: 'success' },
-    { id: 5, type: 'payroll', message: 'Salary processed for 25 employees', time: '1 day ago', status: 'success' },
   ];
 
   const quickActions = [
@@ -161,17 +163,36 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
     },
   ];
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success':
+  const getStatusIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'payment_received':
+      case 'invoice_created':
+      case 'customer_added':
+      case 'tax_filed':
+      case 'payroll_processed':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'warning':
+      case 'inventory_alert':
         return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-      case 'pending':
-        return <Clock className="w-4 h-4 text-blue-500" />;
       default:
-        return <CheckCircle className="w-4 h-4 text-gray-500" />;
+        return <Clock className="w-4 h-4 text-gray-500" />;
     }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hours ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " minutes ago";
+    return "just now";
   };
 
   if (isLoading) {
@@ -270,15 +291,19 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  {getStatusIcon(activity.status)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    {getStatusIcon(activity.action_type)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm">{activity.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{formatTimestamp(activity.timestamp)}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center">No recent activity.</p>
+              )}
             </div>
           </CardContent>
         </Card>

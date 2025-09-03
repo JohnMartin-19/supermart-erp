@@ -3,5 +3,5 @@ from .views import *
 
 
 urlpatterns = [
-    path("recent_activities", ActivityLogsAPIView.as_view()),
+    path("recent_activities/", ActivityLogsAPIView.as_view()),
 ]

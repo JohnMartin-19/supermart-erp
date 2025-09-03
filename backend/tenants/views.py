@@ -11,6 +11,6 @@ class ActivityLogsAPIView(ListAPIView):
     GET REQUEST: To simply map the recent transactions happening across 
     the system at large
     """
-    serializer_class = ActiivtyLogSerializer
-    def get_queryset(self, request):
-        return ActivityLogs.objects.filter(tenant = request.user.tenant).order_by('-timestamp')[:10]
+    serializer_class = ActivityLogSerializer
+    def get_queryset(self):
+        return ActivityLogs.objects.filter(tenant = self.request.user.tenant).order_by('-timestamp')[:10]

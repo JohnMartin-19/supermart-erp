@@ -6,6 +6,7 @@ from .serializers import *
 from django.shortcuts import get_object_or_404
 from .models import *
 from tenants.models import *
+from django.db import transaction
 
 class BillListCreateBillAPIView(APIView):
     
@@ -23,17 +24,20 @@ class BillListCreateBillAPIView(APIView):
     POST METHOD: to create a new bill
     """
     def post(self, request):
+        data = request.data
+        vendor_name = data.get('vendor_name') 
         serializer = BillSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            ActivityLogs.objects.create(
-                    tenant=request.user.tenant,
-                    action_type='bill_created',
-                    message=f'Bill for "{request.data.vendor_name}" created.'
-            )
-            return Response(serializer.data, status = status.HTTP_201_CREATED)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-    
+        with transaction.atomic():
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                        action_type='bill_created',
+                        message=f'Bill for "{vendor_name}" created.'
+                )
+                return Response(serializer.data, status = status.HTTP_201_CREATED)
+            return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        
 class BillRetrieveUpdateDestroyAPIView(APIView):
     """
     just a helper method to get an instance of a bill
