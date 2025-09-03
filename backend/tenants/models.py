@@ -28,3 +28,26 @@ class SubscriptionPlan(models.Model):
   
 class Domain(DomainMixin):
     pass
+
+
+
+class ActivityLogs(models.Model):
+    ACTION_CHOICES = [
+        ('invoice_created', 'Invoice Created'),
+        ('payment_received', 'Payment Received'),
+        ('customer_added', 'Customer Added'),
+        ('inventory_alert', 'Inventory Alert'),
+        ('tax_filed', 'Tax Filed'),
+        ('payroll_processed', 'Payroll Processed'),
+    ]
+    
+    action_type = models.CharField(max_length=100, choices=ACTION_CHOICES)
+    message = models.TextField(null = True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+        
+    def __str__(self):
+        return f'{self.action_type} at {self.timestamp}'
