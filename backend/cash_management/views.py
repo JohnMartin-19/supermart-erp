@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from .models import *
 from .serializers import *
 from django.shortcuts import get_object_or_404
-
+from tenants.models import *
 
 class CashDrawerListCreateAPIView(APIView):
     
@@ -26,6 +26,11 @@ class CashDrawerListCreateAPIView(APIView):
         serializer = CashDrawerSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
+            ActivityLogs.objects.create(
+                    tenant=request.user.tenant,
+                    action_type='cash_drawer_created',
+                    message=f'Cash Drawer for "{request.data.branch}" created by {request.data.user} at {request.data.opened_at}.'
+            )
             return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     

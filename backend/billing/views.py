@@ -5,7 +5,7 @@ from rest_framework import status
 from .serializers import *
 from django.shortcuts import get_object_or_404
 from .models import *
-
+from tenants.models import *
 
 class BillListCreateBillAPIView(APIView):
     
@@ -26,6 +26,11 @@ class BillListCreateBillAPIView(APIView):
         serializer = BillSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
+            ActivityLogs.objects.create(
+                    tenant=request.user.tenant,
+                    action_type='bill_created',
+                    message=f'Bill for "{request.data.vendor_name}" created.'
+            )
             return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
