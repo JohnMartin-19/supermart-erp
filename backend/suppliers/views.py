@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from .models import *
 from .serializers import *
 from django.shortcuts import get_object_or_404
-
+from tenants.models import *
 
 class SupplierListCreateAPIView(APIView):
     """
@@ -22,8 +22,14 @@ class SupplierListCreateAPIView(APIView):
     """
     def post(self,request):
         serializer = SuppliersSerializer(data = request.data)
+        company_name = request.data.get('company_name')
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
+            ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                        action_type='customer_created',
+                        message=f'A new supplier, "{company_name}" has been addded.'
+                )
             return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

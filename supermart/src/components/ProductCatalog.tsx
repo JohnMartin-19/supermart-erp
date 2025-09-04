@@ -64,7 +64,7 @@ export function ProductCatalog() {
   const [addProductError, setAddProductError] = useState<string | null>(null);
   const tenantDomain = localStorage.getItem('tenant_domain');
 
-  // Fetching products and suppliers from their APIs
+  //fetching products and suppliers from their APIs endpoints
   useEffect(() => {
     const fetchProductsAndSuppliers = async () => {
       try {
