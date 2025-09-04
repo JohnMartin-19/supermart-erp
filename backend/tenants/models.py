@@ -35,6 +35,7 @@ class ActivityLogs(models.Model):
     ACTION_CHOICES = [
         ('invoice_created', 'Invoice Created'),
         ('bill_created', 'Bill Created'),
+        ('product_created', 'Product Created'),
         ('payment_received', 'Payment Received'),
         ('customer_added', 'Customer Added'),
         ('user_added', 'User Added'),

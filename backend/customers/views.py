@@ -5,6 +5,7 @@ from rest_framework import status
 from .serializers import *
 from django.shortcuts import get_object_or_404
 from .models import *
+from tenants.models import *
 class CustomerListCreateAPIView(APIView):
     
     """
@@ -22,12 +23,16 @@ class CustomerListCreateAPIView(APIView):
     """
     def post(self, request):
         data = request.data 
-        print('DATATARTAR:',data)
+        full_name = data.get('full_name')
         serializer = CustomerSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant=request.user.tenant)
+            ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                        action_type='customer_created',
+                        message=f'A new customer, "{full_name}" has been added.'
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print("Serializer Errors:", serializer.errors)
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
         
         
