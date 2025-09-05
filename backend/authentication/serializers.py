@@ -43,11 +43,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return token
     
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        data.update({
-            'username': self.user.username,
-            'company_name': getattr(self.user, "company_name", None),
-            'phone_number': getattr(self.user, "phone_number", None),
-        })
-        return data
+    # def validate(self, attrs):
+    #     data = super().validate(attrs)
+    #     data.update({
+    #         'username': self.user.username,
+    #         'company_name': getattr(self.user, "company_name", None),
+    #         'phone_number': getattr(self.user, "phone_number", None),
+    #     })
+    #     return data

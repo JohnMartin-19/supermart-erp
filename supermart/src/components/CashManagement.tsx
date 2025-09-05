@@ -47,20 +47,30 @@ interface ExpenseData {
   tenant: number;
 }
 
+// Interface for fetched branch data
+interface Branch {
+  id: number;
+  branch_name: string;
+}
 
 export function CashManagement() {
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedDate, setSelectedDate] = useState('today');
   const [isReconcileOpen, setIsReconcileOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
-  const [isDrawerFormOpen, setIsDrawerFormOpen] = useState(false);
-  const tenantDomain = localStorage.getItem("tenant_domain")
+  const [isDrawerFormOpen, setIsDrawerFormOpen] = useState(false); 
+  const tenantDomain = localStorage.getItem("tenant_domain");
+
   // States for fetched data
   const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
   const [cashExpenses, setCashExpenses] = useState<ExpenseData[]>([]);
+  const [branchesList, setBranchesList] = useState<Branch[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // States for the logged-in user
+  const [currentCashier, setCurrentCashier] = useState<string | null>(null);
+  
   // States for the Record Expense form
   const [newExpense, setNewExpense] = useState({ cash_drawer_id: '', amount: 0, description: '' });
   const [isAddingExpense, setIsAddingExpense] = useState(false);
@@ -74,7 +84,7 @@ export function CashManagement() {
   const [reconciliationSuccess, setReconciliationSuccess] = useState(false);
 
   // States for the Add Drawer form
-  const [newDrawer, setNewDrawer] = useState({ branch: '', cashier: '', opening_balance: 0 });
+  const [newDrawer, setNewDrawer] = useState({ branch: '', opening_balance: 0 });
   const [isAddingDrawer, setIsAddingDrawer] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const [drawerSuccess, setDrawerSuccess] = useState(false);
@@ -103,7 +113,6 @@ export function CashManagement() {
     },
   ]);
 
-  // Combined transactions for display
   const allTransactions: CashTransaction[] = [
     ...salesTransactions,
     ...cashExpenses.map(exp => ({
@@ -120,34 +129,45 @@ export function CashManagement() {
 
   const branches = ['all', ...Array.from(new Set(cashDrawers.map(d => d.branch)))];
 
-  // Fetch all required data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const drawersResponse = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_drawers/`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
-        const expensesResponse = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_expenses/`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        };
 
-        if (!drawersResponse.ok || !expensesResponse.ok) {
+        // Decode the JWT to get the username
+        const access_token = localStorage.getItem('access_token');
+        if (access_token) {
+          console.log(access_token)
+          const payloadBase64 = access_token.split(".")[1];
+          const decodedPayload = JSON.parse(atob(payloadBase64));
+          if (decodedPayload.username) {
+            setCurrentCashier(decodedPayload.username);
+          }
+        }
+
+        const [drawersResponse, expensesResponse, branchesResponse] = await Promise.all([
+          fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_drawers/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_expenses/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/multi_location/branches/`, { headers }),
+        ]);
+
+        if (!drawersResponse.ok || !expensesResponse.ok || !branchesResponse.ok) {
           const drawersError = !drawersResponse.ok ? await drawersResponse.json() : null;
           const expensesError = !expensesResponse.ok ? await expensesResponse.json() : null;
-          throw new Error(drawersError?.detail || expensesError?.detail || 'Failed to fetch data.');
+          const branchesError = !branchesResponse.ok ? await branchesResponse.json() : null;
+          throw new Error(drawersError?.detail || expensesError?.detail || branchesError?.detail || 'Failed to fetch data.');
         }
 
         const drawersData = await drawersResponse.json();
         const expensesData = await expensesResponse.json();
+        const branchesData = await branchesResponse.json();
         
         setCashDrawers(drawersData);
         setCashExpenses(expensesData);
+        setBranchesList(branchesData);
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
       } finally {
@@ -155,9 +175,8 @@ export function CashManagement() {
       }
     };
     fetchData();
-  }, []);
+  }, [tenantDomain]);
 
-  // Handlers for form submissions
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAddingExpense(true);
@@ -188,7 +207,6 @@ export function CashManagement() {
       setExpenseSuccess(true);
       setNewExpense({ cash_drawer_id: '', amount: 0, description: '' });
 
-      // Refresh data after successful addition
       setTimeout(() => {
         window.location.reload(); 
       }, 1000);
@@ -230,7 +248,6 @@ export function CashManagement() {
       setReconciliationSuccess(true);
       setReconciliation({ cash_drawer_id: '', actual_count: 0, notes: '' });
 
-      // Refresh data after successful reconciliation
       setTimeout(() => {
         window.location.reload(); 
       }, 1000);
@@ -242,7 +259,6 @@ export function CashManagement() {
     }
   };
 
-  // Handler for adding a new cash drawer
   const handleAddDrawer = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAddingDrawer(true);
@@ -252,7 +268,7 @@ export function CashManagement() {
     try {
       const payload = {
         branch: newDrawer.branch,
-        cashier: newDrawer.cashier,
+        cashier: currentCashier,
         opening_balance: newDrawer.opening_balance,
       };
 
@@ -271,7 +287,7 @@ export function CashManagement() {
       }
       
       setDrawerSuccess(true);
-      setNewDrawer({ branch: '', cashier: '', opening_balance: 0 });
+      setNewDrawer({ branch: '', opening_balance: 0 });
 
       setTimeout(() => {
         window.location.reload(); 
@@ -295,7 +311,6 @@ export function CashManagement() {
   const totalCash = cashDrawers.reduce((sum, drawer) => sum + (drawer.current_balance ?? 0), 0);
   const totalSales = salesTransactions.reduce((sum, sale) => sum + sale.amount, 0);
 
-  // Calculate total expenses for the day
   const today = new Date().toLocaleDateString();
   const todayExpenses = cashExpenses
     .filter(exp => new Date(exp.recorded_at).toLocaleDateString() === today)
@@ -303,7 +318,6 @@ export function CashManagement() {
 
   const openDrawers = cashDrawers.filter(drawer => drawer.status === 'open').length;
 
-  // Calculate total expenses per branch
   const totalExpensesByBranch = cashExpenses.reduce((map, exp) => {
     const branchName = cashDrawers.find(d => d.id === String(exp.cash_drawer))?.branch || `Branch ${exp.branch}`;
     const currentTotal = map.get(branchName) || 0;
@@ -340,12 +354,6 @@ export function CashManagement() {
       default: return <Banknote className="h-3 w-3" />;
     }
   };
-  
-  // Mock data for branches and users.
-  // Replace with real data fetched from your backend.
-  const mockBranches = ['Main Store - Nairobi CBD', 'Westlands', 'Kisumu'];
-  const mockCashiers = ['Alice Wanjiku', 'Bob Ondieki', 'Charles Ngugi'];
-
 
   if (isLoading) {
     return (
@@ -401,7 +409,6 @@ export function CashManagement() {
                         <SelectValue placeholder="Select an open cash drawer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Filter to show only currently open cash drawers */}
                         {cashDrawers
                           .filter(drawer => drawer.status === 'open')
                           .map(drawer => (
@@ -571,32 +578,19 @@ export function CashManagement() {
                         <SelectValue placeholder="Select a branch" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockBranches.map(branch => (
-                          <SelectItem key={branch} value={branch}>
-                            {branch}
+                        {branchesList.map(branch => (
+                          <SelectItem key={branch.id} value={branch.branch_name}>
+                            {branch.branch_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cashier">Cashier</Label>
-                    <Select
-                      value={newDrawer.cashier}
-                      onValueChange={(value) => setNewDrawer({ ...newDrawer, cashier: value })}
-                      required
-                    >
-                      <SelectTrigger id="cashier">
-                        <SelectValue placeholder="Select a cashier" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockCashiers.map(cashier => (
-                          <SelectItem key={cashier} value={cashier}>
-                            {cashier}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Cashier</Label>
+                    <div className="p-2 border rounded-md bg-gray-100 dark:bg-gray-800">
+                      {currentCashier ? currentCashier : 'Loading...'}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="opening-balance">Opening Balance (KES)</Label>

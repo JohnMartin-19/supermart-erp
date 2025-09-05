@@ -15,8 +15,6 @@ from tenants.serializers import *
 from tenants.models import *
 class RegisterAPIView(APIView):
     def post(self, request):
-        data = request.data
-        print("DATATAAT:", data)
         with transaction.atomic():
             company_name = request.data.get("company_name")
             domain_url = request.data.get("domain_url")
@@ -84,17 +82,22 @@ class LoginAPIView(TokenObtainPairView):
         tenant_domain = None  
 
         if user.tenant_id:
-            # 3. Switch to the 'public' schema to query for the domain
             with schema_context('public'):
                 try:
-                    # Use the tenant_id to get the domain from the public schema
+                    
                     domain = Domain.objects.get(tenant_id=user.tenant_id, is_primary=True)
                     tenant_domain = domain.domain
                 except Domain.DoesNotExist:
                     pass
 
-        # 4. Add the retrieved domain to the response
+        
         response.data['tenant_domain'] = tenant_domain
+        response.data['user_data'] = {
+            'username': user.username,
+            'company_name': getattr(user, 'company_name', None),
+            'phone_number': getattr(user, 'phone_number', None),
+        }
+
         return response
     
 class LogoutAPIView(APIView):
