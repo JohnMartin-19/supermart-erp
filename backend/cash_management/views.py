@@ -6,7 +6,7 @@ from .models import *
 from .serializers import *
 from django.shortcuts import get_object_or_404
 from tenants.models import *
-
+from django.db import transaction
 class CashDrawerListCreateAPIView(APIView):
     
     """
@@ -24,16 +24,19 @@ class CashDrawerListCreateAPIView(APIView):
     
     def post(self, request):
         serializer = CashDrawerSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            ActivityLogs.objects.create(
-                    tenant=request.user.tenant,
-                    action_type='cash_drawer_created',
-                    message=f'Cash Drawer for "{request.data.branch}" created by {request.data.user} at {request.data.opened_at}.'
-            )
-            return Response(serializer.data, status = status.HTTP_201_CREATED)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-    
+        branch = request.data.get('branch')
+        opened_at = request.data.get('opened_at')
+        with transaction.atomic():
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                        action_type='cash_drawer_created',
+                        message=f'Cash Drawer for "{branch}" created  at {opened_at}.'
+                )
+                return Response(serializer.data, status = status.HTTP_201_CREATED)
+            return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        
     
 class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
     
@@ -92,11 +95,18 @@ class CashReconciliationListCreateAPIView(APIView):
     
     def post(self, request):
         serializer = CashReconciliationSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        actual_cash_count = request.data.get('actual_cash_count')
+        with transaction.atomic():
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                                    tenant=request.user.tenant,
+                                    action_type='cash_recon_created',
+                                    message=f'Cash reconciliation of {actual_cash_count} in {branch_city} has been recorded.'
+                            )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 class CashReconciliationRetrieveUpdateDestroyAPIView(APIView):
     
     """
@@ -161,12 +171,20 @@ class CashExpenseListCreateAPIView(APIView):
     """
     
     def post(self, request):
+        amount = request.data.get('amount')
+        branch = request.data.get('branch')
         serializer = CashExpenseSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
+        with transaction.atomic():
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                                    tenant=request.user.tenant,
+                                    action_type='cash_expense_created',
+                                    message=f'Cash expense of {amount} in {branch} has been recorded.'
+                            )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        
 class CashExpenseRetrieveUpdateDestroyAPIView(APIView):
     
     """

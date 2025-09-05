@@ -53,6 +53,7 @@ export function CashManagement() {
   const [selectedDate, setSelectedDate] = useState('today');
   const [isReconcileOpen, setIsReconcileOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [isDrawerFormOpen, setIsDrawerFormOpen] = useState(false);
   const tenantDomain = localStorage.getItem("tenant_domain")
   // States for fetched data
   const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
@@ -71,6 +72,12 @@ export function CashManagement() {
   const [isReconciling, setIsReconciling] = useState(false);
   const [reconciliationError, setReconciliationError] = useState<string | null>(null);
   const [reconciliationSuccess, setReconciliationSuccess] = useState(false);
+
+  // States for the Add Drawer form
+  const [newDrawer, setNewDrawer] = useState({ branch: '', cashier: '', opening_balance: 0 });
+  const [isAddingDrawer, setIsAddingDrawer] = useState(false);
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [drawerSuccess, setDrawerSuccess] = useState(false);
 
   // Mock sales data to be displayed alongside real expenses
   const [salesTransactions] = useState<CashTransaction[]>([
@@ -235,6 +242,48 @@ export function CashManagement() {
     }
   };
 
+  // Handler for adding a new cash drawer
+  const handleAddDrawer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingDrawer(true);
+    setDrawerError(null);
+    setDrawerSuccess(false);
+
+    try {
+      const payload = {
+        branch: newDrawer.branch,
+        cashier: newDrawer.cashier,
+        opening_balance: newDrawer.opening_balance,
+      };
+
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_drawers/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to add cash drawer.');
+      }
+      
+      setDrawerSuccess(true);
+      setNewDrawer({ branch: '', cashier: '', opening_balance: 0 });
+
+      setTimeout(() => {
+        window.location.reload(); 
+      }, 1000);
+
+    } catch (err: any) {
+      setDrawerError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsAddingDrawer(false);
+    }
+  };
+
   const filteredDrawers = selectedBranch === 'all' 
     ? cashDrawers 
     : cashDrawers.filter(drawer => drawer.branch === selectedBranch);
@@ -291,6 +340,12 @@ export function CashManagement() {
       default: return <Banknote className="h-3 w-3" />;
     }
   };
+  
+  // Mock data for branches and users.
+  // Replace with real data fetched from your backend.
+  const mockBranches = ['Main Store - Nairobi CBD', 'Westlands', 'Kisumu'];
+  const mockCashiers = ['Alice Wanjiku', 'Bob Ondieki', 'Charles Ngugi'];
+
 
   if (isLoading) {
     return (
@@ -408,7 +463,6 @@ export function CashManagement() {
               </form>
             </DialogContent>
           </Dialog>
-
           <Dialog open={isReconcileOpen} onOpenChange={setIsReconcileOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
@@ -492,6 +546,102 @@ export function CashManagement() {
               </form>
             </DialogContent>
           </Dialog>
+          
+          <Dialog open={isDrawerFormOpen} onOpenChange={setIsDrawerFormOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Cash Drawer
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Cash Drawer</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddDrawer}>
+                <div className="grid grid-cols-1 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Branch</Label>
+                    <Select
+                      value={newDrawer.branch}
+                      onValueChange={(value) => setNewDrawer({ ...newDrawer, branch: value })}
+                      required
+                    >
+                      <SelectTrigger id="branch">
+                        <SelectValue placeholder="Select a branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockBranches.map(branch => (
+                          <SelectItem key={branch} value={branch}>
+                            {branch}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cashier">Cashier</Label>
+                    <Select
+                      value={newDrawer.cashier}
+                      onValueChange={(value) => setNewDrawer({ ...newDrawer, cashier: value })}
+                      required
+                    >
+                      <SelectTrigger id="cashier">
+                        <SelectValue placeholder="Select a cashier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockCashiers.map(cashier => (
+                          <SelectItem key={cashier} value={cashier}>
+                            {cashier}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="opening-balance">Opening Balance (KES)</Label>
+                    <Input
+                      id="opening-balance"
+                      type="number"
+                      placeholder="0.00"
+                      value={newDrawer.opening_balance}
+                      onChange={(e) => setNewDrawer({ ...newDrawer, opening_balance: Number(e.target.value) })}
+                      required
+                    />
+                  </div>
+                </div>
+                {isAddingDrawer && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Adding drawer...</span>
+                  </div>
+                )}
+                {drawerError && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{drawerError}</AlertDescription>
+                  </Alert>
+                )}
+                {drawerSuccess && (
+                  <Alert className="mt-4 border-green-500">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertTitle>Success</AlertTitle>
+                    <AlertDescription>Cash drawer added successfully!</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex justify-end gap-2 mt-6">
+                  <DialogClose asChild>
+                    <Button variant="outline" type="button">Cancel</Button>
+                  </DialogClose>
+                  <Button type="submit" disabled={isAddingDrawer}>
+                    {isAddingDrawer ? 'Adding...' : 'Add Drawer'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
         </div>
       </div>
 

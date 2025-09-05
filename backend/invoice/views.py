@@ -5,7 +5,8 @@ from rest_framework import status
 from .serializers import *
 from django.shortcuts import get_object_or_404
 from .models import *
-
+from tenants.models import *
+from django.db import transaction
 
 class InvoiceListCreateAPIView(APIView):
     
@@ -26,11 +27,19 @@ class InvoiceListCreateAPIView(APIView):
         serializer =InvoiceSerializer(data = request.data)
         data = request.data
         print(data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            return Response(serializer.data, status = status.HTTP_201_CREATED)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-    
+        invoice_number = data.get('invoice_number')
+        customer_name = data.get('customer_name')
+        with transaction.atomic():  
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                                    tenant=request.user.tenant,
+                                    action_type='invoice_created',
+                                    message=f'An invoice with the  "{invoice_number}" for  {customer_name} has been generated.'
+                            )
+                return Response(serializer.data, status = status.HTTP_201_CREATED)
+            return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        
 class InvoiceRetrieveUpdateDestroyAPIView(APIView):
     """
     Helper method to get an instace of an invoice

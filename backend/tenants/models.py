@@ -36,6 +36,8 @@ class ActivityLogs(models.Model):
         ('invoice_created', 'Invoice Created'),
         ('bill_created', 'Bill Created'),
         ('branch_created', 'Branch Created'),
+        ('cash_recon_created', 'Cash Recon Created'),
+        ('invoice_created', 'Invoice Created'),
         ('product_created', 'Product Created'),
         ('payment_received', 'Payment Received'),
         ('customer_added', 'Customer Added'),
