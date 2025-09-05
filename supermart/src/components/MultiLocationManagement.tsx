@@ -201,7 +201,7 @@ export function MultiLocationManagement() {
         notes: newTransfer.reason,
       };
 
-      const response = await fetch(`http://{tenantDomain}:8000/api/v1/multi_location/stock_transfers/`, {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/multi_location/stock_transfers/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +252,7 @@ export function MultiLocationManagement() {
     }
 
     try {
-        const response = await fetch(`http://{tenantDomain}:8000/api/v1/multi_location/branches/`, {
+        const response = await fetch(`http://${tenantDomain}:8000/api/v1/multi_location/branches/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

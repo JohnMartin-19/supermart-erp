@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from .models import *
 from .serializers import *
 from django.shortcuts import get_object_or_404
-
+from tenants.models import *
+from django.db import transaction
 
 
 class BranchListCreateAPIView(APIView):
@@ -24,10 +25,19 @@ class BranchListCreateAPIView(APIView):
     """
     def post(self,request):
         serializer = BranchSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        branch_name = data.get('branch_name')
+        branch_city = data.get('city')
+        with transaction.atomic():
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                                tenant=request.user.tenant,
+                                action_type='branch_created',
+                                message=f'A new branch, "{branch_name}" in {branch_city} has been addded.'
+                        )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     
 class BranchRetrieveUpdateDestroyAPIView(APIView):

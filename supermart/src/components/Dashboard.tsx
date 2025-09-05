@@ -174,7 +174,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
       case 'inventory_alert':
         return <AlertCircle className="w-4 h-4 text-yellow-500" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
     }
   };
 
