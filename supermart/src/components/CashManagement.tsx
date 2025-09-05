@@ -53,6 +53,15 @@ interface Branch {
   branch_name: string;
 }
 
+// Interface for fetched reconciliation data
+interface ReconciliationData {
+  id: string;
+  cash_drawer: number;
+  actual_cash_count: number;
+  notes: string;
+  recorded_at: string;
+}
+
 export function CashManagement() {
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedDate, setSelectedDate] = useState('today');
@@ -65,6 +74,7 @@ export function CashManagement() {
   const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
   const [cashExpenses, setCashExpenses] = useState<ExpenseData[]>([]);
   const [branchesList, setBranchesList] = useState<Branch[]>([]); 
+  const [reconciliations, setReconciliations] = useState<ReconciliationData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,7 +150,6 @@ export function CashManagement() {
         // Decode the JWT to get the username
         const access_token = localStorage.getItem('access_token');
         if (access_token) {
-          console.log(access_token)
           const payloadBase64 = access_token.split(".")[1];
           const decodedPayload = JSON.parse(atob(payloadBase64));
           if (decodedPayload.username) {
@@ -148,26 +157,31 @@ export function CashManagement() {
           }
         }
 
-        const [drawersResponse, expensesResponse, branchesResponse] = await Promise.all([
+        const [drawersResponse, expensesResponse, branchesResponse, reconciliationsResponse] = await Promise.all([
           fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_drawers/`, { headers }),
           fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_expenses/`, { headers }),
           fetch(`http://${tenantDomain}:8000/api/v1/multi_location/branches/`, { headers }),
+          fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_reconciliations/`, { headers }),
         ]);
 
-        if (!drawersResponse.ok || !expensesResponse.ok || !branchesResponse.ok) {
+        if (!drawersResponse.ok || !expensesResponse.ok || !branchesResponse.ok || !reconciliationsResponse.ok) {
           const drawersError = !drawersResponse.ok ? await drawersResponse.json() : null;
           const expensesError = !expensesResponse.ok ? await expensesResponse.json() : null;
           const branchesError = !branchesResponse.ok ? await branchesResponse.json() : null;
-          throw new Error(drawersError?.detail || expensesError?.detail || branchesError?.detail || 'Failed to fetch data.');
+          const reconciliationsError = !reconciliationsResponse.ok ? await reconciliationsResponse.json() : null;
+          throw new Error(drawersError?.detail || expensesError?.detail || branchesError?.detail || reconciliationsError?.detail || 'Failed to fetch data.');
         }
 
         const drawersData = await drawersResponse.json();
         const expensesData = await expensesResponse.json();
         const branchesData = await branchesResponse.json();
+        const reconciliationsData = await reconciliationsResponse.json();
         
         setCashDrawers(drawersData);
         setCashExpenses(expensesData);
         setBranchesList(branchesData);
+        setReconciliations(reconciliationsData);
+
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
       } finally {
@@ -270,6 +284,7 @@ export function CashManagement() {
         branch: newDrawer.branch,
         cashier: currentCashier,
         opening_balance: newDrawer.opening_balance,
+        current_balance: newDrawer.opening_balance,
       };
 
       const response = await fetch(`http://${tenantDomain}:8000/api/v1/cash/cash_drawers/`, {
@@ -309,11 +324,25 @@ export function CashManagement() {
     : allTransactions.filter(transaction => transaction.branch === selectedBranch);
 
   const totalCash = cashDrawers.reduce((sum, drawer) => sum + (drawer.current_balance ?? 0), 0);
-  const totalSales = salesTransactions.reduce((sum, sale) => sum + sale.amount, 0);
 
-  const today = new Date().toLocaleDateString();
+  const today = new Date();
+  
+  const todayReconciledTotal = reconciliations
+    .filter(rec => {
+      const reconciliationDate = new Date(rec.recorded_at);
+      return reconciliationDate.getFullYear() === today.getFullYear() &&
+             reconciliationDate.getMonth() === today.getMonth() &&
+             reconciliationDate.getDate() === today.getDate();
+    })
+    .reduce((sum, rec) => sum + parseFloat(rec.actual_cash_count), 0);
+
   const todayExpenses = cashExpenses
-    .filter(exp => new Date(exp.recorded_at).toLocaleDateString() === today)
+    .filter(exp => {
+      const expenseDate = new Date(exp.recorded_at);
+      return expenseDate.getFullYear() === today.getFullYear() &&
+             expenseDate.getMonth() === today.getMonth() &&
+             expenseDate.getDate() === today.getDate();
+    })
     .reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
 
   const openDrawers = cashDrawers.filter(drawer => drawer.status === 'open').length;
@@ -657,9 +686,9 @@ export function CashManagement() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Daily Sales</p>
-                <p className="text-2xl">KES {(totalSales ?? 0).toLocaleString()}</p>
-                <p className="text-sm text-green-600">Today's revenue</p>
+                <p className="text-sm text-muted-foreground">Daily Reconciled Total</p>
+                <p className="text-2xl">KES {Math.round(todayReconciledTotal ?? 0).toLocaleString()}</p>
+                <p className="text-sm text-green-600">Total cash counted today</p>
               </div>
               <TrendingUp className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -717,68 +746,84 @@ export function CashManagement() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredDrawers.map((drawer) => (
-              <Card key={drawer.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{drawer.branch}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Cashier: {drawer.cashier}
-                      </p>
-                    </div>
-                    <Badge variant={drawer.status === 'open' ? 'default' : 'secondary'}>
-                      {drawer.status.charAt(0).toUpperCase() + drawer.status.slice(1)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Opening Balance</p>
-                      <p className="font-semibold">KES {(drawer.opening_balance ?? 0).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Current Balance</p>
-                      <p className="font-semibold">KES {(drawer.current_balance ?? 0).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Sales</p>
-                      <p className="font-semibold text-green-600">KES {(drawer.total_sales ?? 0).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Expenses</p>
-                      <p className="font-semibold text-red-600">KES {(drawer.total_expenses ?? 0).toLocaleString()}</p>
-                    </div>
-                  </div>
+            {filteredDrawers.map((drawer) => {
+              // Calculate the daily expenses for all drawers
+              const today = new Date();
+              const todayExpenses = cashExpenses
+                .filter(exp => {
+                  const expenseDate = new Date(exp.recorded_at);
+                  return expenseDate.getFullYear() === today.getFullYear() &&
+                         expenseDate.getMonth() === today.getMonth() &&
+                         expenseDate.getDate() === today.getDate();
+                })
+                .reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+              
+              // New, simple calculation: Current Balance - Today's Total Expenses
+              const newCurrentBalance = (drawer.current_balance ?? 0) - todayExpenses;
 
-                  <div className="pt-2 border-t space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Opened:</span>
-                      <span>{new Date(drawer.opened_at).toLocaleString()}</span>
-                    </div>
-                    {drawer.closed_at && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Closed:</span>
-                        <span>{new Date(drawer.closed_at).toLocaleString()}</span>
+              return (
+                <Card key={drawer.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{drawer.branch}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Cashier: {drawer.cashier}
+                        </p>
                       </div>
-                    )}
-                  </div>
+                      <Badge variant={drawer.status === 'open' ? 'default' : 'secondary'}>
+                        {drawer.status.charAt(0).toUpperCase() + drawer.status.slice(1)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Opening Balance</p>
+                        <p className="font-semibold">KES {(drawer.opening_balance ?? 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Current Balance</p>
+                        <p className="font-semibold">KES {newCurrentBalance.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Sales</p>
+                        <p className="font-semibold text-green-600">KES {(drawer.total_sales ?? 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Expenses</p>
+                        <p className="font-semibold text-red-600">KES {(drawer.total_expenses ?? 0).toLocaleString()}</p>
+                      </div>
+                    </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Eye className="h-3 w-3 mr-2" />
-                      View Details
-                    </Button>
-                    {drawer.status === 'open' && (
-                      <Button size="sm" variant="outline">
-                        Close Drawer
+                    <div className="pt-2 border-t space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Opened:</span>
+                        <span>{new Date(drawer.opened_at).toLocaleString()}</span>
+                      </div>
+                      {drawer.closed_at && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Closed:</span>
+                          <span>{new Date(drawer.closed_at).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Eye className="h-3 w-3 mr-2" />
+                        View Details
                       </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      {drawer.status === 'open' && (
+                        <Button size="sm" variant="outline">
+                          Close Drawer
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </TabsContent>
 
@@ -871,7 +916,7 @@ export function CashManagement() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Cash In:</span>
-                    <span className="font-medium text-green-600">KES {totalSales.toLocaleString()}</span>
+                    <span className="font-medium text-green-600">KES {Math.round(todayReconciledTotal).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Cash Out:</span>
@@ -880,7 +925,7 @@ export function CashManagement() {
                   <div className="flex justify-between items-center pt-2 border-t">
                     <span className="font-medium">Net Cash Flow:</span>
                     <span className="font-semibold text-green-600">
-                      KES {(totalSales - todayExpenses).toLocaleString()}
+                      KES {(todayReconciledTotal - todayExpenses).toLocaleString()}
                     </span>
                   </div>
                 </div>

@@ -102,7 +102,7 @@ class CashReconciliationListCreateAPIView(APIView):
                 ActivityLogs.objects.create(
                                     tenant=request.user.tenant,
                                     action_type='cash_recon_created',
-                                    message=f'Cash reconciliation of {actual_cash_count} in {branch_city} has been recorded.'
+                                    message=f'Cash reconciliation of {actual_cash_count} for  this cash drawer has been recorded.'
                             )
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -172,7 +172,6 @@ class CashExpenseListCreateAPIView(APIView):
     
     def post(self, request):
         amount = request.data.get('amount')
-        branch = request.data.get('branch')
         serializer = CashExpenseSerializer(data = request.data)
         with transaction.atomic():
             if serializer.is_valid():
@@ -180,7 +179,7 @@ class CashExpenseListCreateAPIView(APIView):
                 ActivityLogs.objects.create(
                                     tenant=request.user.tenant,
                                     action_type='cash_expense_created',
-                                    message=f'Cash expense of {amount} in {branch} has been recorded.'
+                                    message=f'Cash expense of {amount}  has been recorded.'
                             )
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
