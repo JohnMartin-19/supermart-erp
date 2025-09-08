@@ -85,6 +85,7 @@ TENANT_APPS = [
     'cash_management',
     'invoice',
     'billing',
+    'payments',
     
     #core apps
     'accounting',
