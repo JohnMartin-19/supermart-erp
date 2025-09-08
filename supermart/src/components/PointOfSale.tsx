@@ -5,7 +5,8 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Trash2, Plus, Minus, Calculator, CreditCard, Banknote, Receipt, Loader2, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Minus, Calculator, CreditCard, Banknote, Receipt, Loader2, AlertCircle, Printer, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 // Update the Product interface to match the API response
 interface Product {
@@ -40,10 +41,19 @@ export function PointOfSale() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountTendered, setAmountTendered] = useState('');
 
+  // New states for card payment details
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvc, setCvc] = useState('');
+
   const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const tenantDomain = localStorage.getItem('tenant_domain')
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [lastTransactionDetails, setLastTransactionDetails] = useState<any>(null);
+
+  const tenantDomain = localStorage.getItem('tenant_domain');
+  
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -77,7 +87,7 @@ export function PointOfSale() {
     };
 
     fetchProducts();
-  }, []);
+  }, [tenantDomain]);
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -93,7 +103,7 @@ export function PointOfSale() {
       setCart([...cart, {
         id: product.id,
         name: product.name,
-        price: sellingPrice, 
+        price: sellingPrice,
         quantity: 1,
         barcode: product.barcode,
         category: product.category,
@@ -119,24 +129,94 @@ export function PointOfSale() {
   const vatRate = 0.16; // 16% VAT in Kenya
   const vatAmount = subtotal * vatRate;
   const total = subtotal + vatAmount;
-  const change = parseFloat(amountTendered) - total;
+  const change = paymentMethod === 'cash' ? parseFloat(amountTendered) - total : 0;
 
   const filteredProducts = fetchedProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.barcode?.includes(searchQuery)
   );
+  
+  const validateForm = () => {
+    if (cart.length === 0) {
+      alert("Cart cannot be empty.");
+      return false;
+    }
+
+    if (paymentMethod === 'mpesa' && !customerPhone) {
+      alert("Customer phone number is required for M-Pesa payments.");
+      return false;
+    }
+
+    if (paymentMethod === 'card') {
+      if (!cardNumber || !expiryDate || !cvc) {
+        alert("Card details are required.");
+        return false;
+      }
+      // Basic validation for card details
+      if (cardNumber.length < 16) {
+        alert("Card number must be 16 digits.");
+        return false;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+        alert("Expiry date must be in MM/YY format.");
+        return false;
+      }
+      if (cvc.length < 3) {
+        alert("CVC must be 3 or 4 digits.");
+        return false;
+      }
+    }
+
+    if (paymentMethod === 'cash' && parseFloat(amountTendered) < total) {
+      alert("Amount tendered is insufficient.");
+      return false;
+    }
+
+    return true;
+  };
 
   const processPayment = () => {
-    if (cart.length === 0) return;
+    if (!validateForm()) {
+      return;
+    }
 
     // Mock payment processing - would integrate with Django API
-    alert(`Payment processed successfully!\nTotal: KES ${total.toFixed(2)}\nChange: KES ${change >= 0 ? change.toFixed(2) : '0.00'}`);
+    const transactionId = `TRX-${Date.now()}`;
+    const transactionTime = new Date().toLocaleString();
 
-    // Clear cart after successful payment
+    const transactionDetails = {
+      id: transactionId,
+      time: transactionTime,
+      items: cart.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.quantity * item.price
+      })),
+      subtotal: subtotal,
+      vat: vatAmount,
+      total: total,
+      paymentMethod: paymentMethod,
+      amountTendered: parseFloat(amountTendered) || total,
+      change: change >= 0 ? change : 0,
+      customerPhone: customerPhone,
+    };
+
+    setLastTransactionDetails(transactionDetails);
+    setIsReceiptOpen(true);
+    
+    // Clear cart and states after successful payment simulation
     setCart([]);
     setAmountTendered('');
     setCustomerPhone('');
     setSearchQuery('');
+    setCardNumber('');
+    setExpiryDate('');
+    setCvc('');
+  };
+
+  const printReceipt = () => {
+    window.print();
   };
 
   return (
@@ -285,8 +365,10 @@ export function PointOfSale() {
               <div className="space-y-3">
                 <Input
                   placeholder="Customer phone (optional)"
+                  type="tel"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
+                  required={paymentMethod === 'mpesa'}
                 />
 
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -332,11 +414,39 @@ export function PointOfSale() {
                     )}
                   </div>
                 )}
+                
+                {paymentMethod === 'card' && (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Card Number"
+                      type="text"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      required
+                    />
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="MM/YY"
+                        type="text"
+                        value={expiryDate}
+                        onChange={(e) => setExpiryDate(e.target.value)}
+                        required
+                      />
+                      <Input
+                        placeholder="CVC"
+                        type="text"
+                        value={cvc}
+                        onChange={(e) => setCvc(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   className="w-full"
                   onClick={processPayment}
-                  disabled={cart.length === 0 || (paymentMethod === 'cash' && change < 0)}
+                  disabled={cart.length === 0}
                 >
                   Process Payment - KES {total.toFixed(2)}
                 </Button>
@@ -345,6 +455,85 @@ export function PointOfSale() {
           </Card>
         </div>
       </div>
+      
+      {/* Receipt Dialog */}
+      <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Transaction Receipt</DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={() => setIsReceiptOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogHeader>
+          <div className="flex flex-col items-center text-center space-y-4">
+            <h2 className="text-2xl font-bold">POS Receipt</h2>
+            <div className="w-full text-left space-y-1 text-sm">
+              <p><strong>Transaction ID:</strong> {lastTransactionDetails?.id}</p>
+              <p><strong>Date & Time:</strong> {lastTransactionDetails?.time}</p>
+              <p><strong>Cashier:</strong> John Doe</p>
+            </div>
+            
+            <Separator className="w-full" />
+            
+            <div className="w-full text-left space-y-2">
+              <h3 className="font-semibold text-lg">Items Purchased</h3>
+              {lastTransactionDetails?.items.map((item: any, index: number) => (
+                <div key={index} className="flex justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">({item.quantity} x KES {item.price.toFixed(2)})</p>
+                  </div>
+                  <span>KES {item.total.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            <Separator className="w-full" />
+            
+            <div className="w-full text-left space-y-1 text-sm">
+              <div className="flex justify-between">
+                <p>Subtotal</p>
+                <p>KES {lastTransactionDetails?.subtotal.toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>VAT (16%)</p>
+                <p>KES {lastTransactionDetails?.vat.toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between text-lg font-bold">
+                <p>Total</p>
+                <p>KES {lastTransactionDetails?.total.toFixed(2)}</p>
+              </div>
+            </div>
+            
+            <Separator className="w-full" />
+            
+            <div className="w-full text-left space-y-1 text-sm">
+              <div className="flex justify-between">
+                <p>Payment Method</p>
+                <p>{lastTransactionDetails?.paymentMethod.toUpperCase()}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>Amount Tendered</p>
+                <p>KES {lastTransactionDetails?.amountTendered.toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between font-bold text-green-600">
+                <p>Change</p>
+                <p>KES {lastTransactionDetails?.change.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <Button onClick={printReceipt} className="w-full mt-4">
+              <Printer className="h-4 w-4 mr-2" />
+              Print Receipt
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
