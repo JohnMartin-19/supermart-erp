@@ -71,3 +71,6 @@ class Product(models.Model):
         if self.cost_price > 0:
             return ((self.selling_price - self.cost_price) / self.cost_price) * 100
         return 0 
+    
+class Order(models.Model):
+    pass

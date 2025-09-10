@@ -1,6 +1,6 @@
 from django.db import models
 from tenants.models import *
-
+from products.models import *
 
 class Payments(models.Model):
     customer_name = models.CharField(max_length=100, null = True, blank = True)
@@ -13,7 +13,7 @@ class Payments(models.Model):
     mpesa_reference = models.CharField(max_length=50, blank=True)
     card_last4 = models.CharField(max_length=4, blank=True, help_text="Last 4 digits of the card for record keeping.")
     timestamp = models.DateField(auto_now_add=True)
-    
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name = 'payments')
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
     
     def __str__(self):
