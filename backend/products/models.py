@@ -79,7 +79,7 @@ class Order(models.Model):
     cashier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     total_amount = models.DecimalField(decimal_places=2,max_digits=10, default=0)
     total_vat = models.DecimalField(decimal_places=2, max_digits=10, default=0)
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null = True)
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('completed', 'Completed'),
@@ -89,7 +89,6 @@ class Order(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.order_id:
-            # Generate a unique order ID
             self.order_id = f'ORD-{timezone.now().strftime("%Y%m%d%H%M%S")}'
         super().save(*args, **kwargs)
         
