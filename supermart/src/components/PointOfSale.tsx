@@ -41,6 +41,9 @@ export function PointOfSale() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountTendered, setAmountTendered] = useState('');
 
+  // New states for customer name and address
+  const [customerName, setCustomerName] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
   // New states for card payment details
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -187,6 +190,8 @@ export function PointOfSale() {
     const transactionDetails = {
       id: transactionId,
       time: transactionTime,
+      customerName: customerName || 'N/A',
+      customerAddress: customerAddress || 'N/A',
       items: cart.map(item => ({
         name: item.name,
         quantity: item.quantity,
@@ -199,7 +204,7 @@ export function PointOfSale() {
       paymentMethod: paymentMethod,
       amountTendered: parseFloat(amountTendered) || total,
       change: change >= 0 ? change : 0,
-      customerPhone: customerPhone,
+      customerPhone: customerPhone || 'N/A',
     };
 
     setLastTransactionDetails(transactionDetails);
@@ -210,6 +215,8 @@ export function PointOfSale() {
     setAmountTendered('');
     setCustomerPhone('');
     setSearchQuery('');
+    setCustomerName('');
+    setCustomerAddress('');
     setCardNumber('');
     setExpiryDate('');
     setCvc('');
@@ -364,6 +371,20 @@ export function PointOfSale() {
 
               <div className="space-y-3">
                 <Input
+                  placeholder="Customer Name (optional)"
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+
+                <Input
+                  placeholder="Customer Address (optional)"
+                  type="text"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                />
+
+                <Input
                   placeholder="Customer phone (optional)"
                   type="tel"
                   value={customerPhone}
@@ -476,6 +497,8 @@ export function PointOfSale() {
               <p><strong>Transaction ID:</strong> {lastTransactionDetails?.id}</p>
               <p><strong>Date & Time:</strong> {lastTransactionDetails?.time}</p>
               <p><strong>Cashier:</strong> John Doe</p>
+              <p><strong>Customer Name:</strong> {lastTransactionDetails?.customerName}</p>
+              <p><strong>Customer Address:</strong> {lastTransactionDetails?.customerAddress}</p>
             </div>
             
             <Separator className="w-full" />
