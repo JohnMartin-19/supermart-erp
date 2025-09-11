@@ -73,7 +73,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     """
-     DELETE METHOD:To delete a bill instance from schema   
+    DELETE METHOD:To delete a bill instance from schema   
     """
     @swagger_auto_schema(tags=['Bills'])
     def delete(self, pk):

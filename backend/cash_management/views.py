@@ -39,7 +39,7 @@ class CashDrawerListCreateAPIView(APIView):
         
     
 class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = CashDrawerSerializer
     """
     helper method to get an instace of a cash drawer from our schema
     """
@@ -52,7 +52,7 @@ class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
     """
     def get(self,request,pk):
         cash_drawer = self.get_object(pk)
-        serializer = CashDrawerSerializer(cash_drawer)
+        serializer = self.serializer_class(cash_drawer)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
@@ -60,7 +60,7 @@ class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
     """
     def put(self, request, pk):
         cash_drawer = self.get_object(pk)
-        serializer = CashDrawerSerializer(cash_drawer, data = serializer.data, partial = True)
+        serializer = self.serializer_class(cash_drawer, data = serializer.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -80,13 +80,14 @@ class CashDrawerRetrieveUpdateDestroyAPIView(APIView):
 
 
 class CashReconciliationListCreateAPIView(APIView):
+    serializer_class = CashReconciliationSerializer
     """
-        APIView (GET): GET ALL CASH RECONCS
+        APIView (GET): GET ALL CASH RECONCILIATIONS
     """
     
     def get(self, request):
         cash_reconciliations = CashReconciliation.objects.all()
-        serializer = CashReconciliationSerializer(cash_reconciliations,many=True)
+        serializer = self.serializer_class(cash_reconciliations,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     """
@@ -94,7 +95,7 @@ class CashReconciliationListCreateAPIView(APIView):
     """
     
     def post(self, request):
-        serializer = CashReconciliationSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         actual_cash_count = request.data.get('actual_cash_count')
         with transaction.atomic():
             if serializer.is_valid():
@@ -108,7 +109,7 @@ class CashReconciliationListCreateAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 class CashReconciliationRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = CashReconciliationSerializer
     """
     helper method to get a single instance of a cash recon from our schema
     """
@@ -124,7 +125,7 @@ class CashReconciliationRetrieveUpdateDestroyAPIView(APIView):
         cash_reconciliation = self.get_object(pk)
         if  not cash_reconciliation:
             return Response('Cash reconcilaition does not exist', status=status.HTTP_404_NOT_FOUND)
-        serializer = CashReconciliationSerializer(cash_reconciliation)
+        serializer = self.serializer_class(cash_reconciliation)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     """
@@ -133,7 +134,7 @@ class CashReconciliationRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self, request, pk):
         cash_reconciliation = self.get_object(pk)
-        serializer = CashReconciliationSerializer(cash_reconciliation, data = request.data, partial = True)
+        serializer = self.serializer_class(cash_reconciliation, data = request.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status = status.HTTP_200_OK)
@@ -155,7 +156,7 @@ class CashReconciliationRetrieveUpdateDestroyAPIView(APIView):
 # APIs for cash expense
 
 class CashExpenseListCreateAPIView(APIView):
-    
+    serializer_class = CashExpenseSerializer
     
     """
     GET METHOD: To get all cash expenses in our schema
@@ -172,7 +173,7 @@ class CashExpenseListCreateAPIView(APIView):
     
     def post(self, request):
         amount = request.data.get('amount')
-        serializer = CashExpenseSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         with transaction.atomic():
             if serializer.is_valid():
                 serializer.save(tenant = request.user.tenant)
@@ -185,7 +186,7 @@ class CashExpenseListCreateAPIView(APIView):
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         
 class CashExpenseRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = CashExpenseSerializer
     """
     helper method to get a single instance of a cash expense using its ID
     """
@@ -194,12 +195,20 @@ class CashExpenseRetrieveUpdateDestroyAPIView(APIView):
         return get_object_or_404(CashExpense, pk=pk)
     
     """
+    GET METHOD:
+    """
+    def get(self, request,pk):
+        cash_expense = self.get_object(pk)
+        serializer = self.serializer_class(cash_expense)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    
+    """
     PUT METHOD: To update an existing cash expense with its ID
     """
     
     def put(self, request,pk):
         cash_expense = self.get_object(pk)
-        serializer = CashExpenseSerializer(cash_expense, data= request.data, partial = True)
+        serializer = self.serializer_class(cash_expense, data= request.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
