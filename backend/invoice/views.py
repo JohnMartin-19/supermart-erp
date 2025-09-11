@@ -9,7 +9,7 @@ from tenants.models import *
 from django.db import transaction
 
 class InvoiceListCreateAPIView(APIView):
-    
+    serializer_class = InvoiceSerializer
     """
     GET METHOD: To get all invoices in our schema
     """
@@ -24,7 +24,7 @@ class InvoiceListCreateAPIView(APIView):
     """
     
     def post(self, request):
-        serializer =InvoiceSerializer(data = request.data)
+        serializer =self.serializer_class(data = request.data)
         data = request.data
         print(data)
         invoice_number = data.get('invoice_number')
@@ -41,6 +41,7 @@ class InvoiceListCreateAPIView(APIView):
             return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
         
 class InvoiceRetrieveUpdateDestroyAPIView(APIView):
+    serializer_class = InvoiceSerializer
     """
     Helper method to get an instace of an invoice
     """
@@ -54,16 +55,16 @@ class InvoiceRetrieveUpdateDestroyAPIView(APIView):
     
     def get(self, request, pk):
         invoice = self.get_object(pk)
-        serializer = InvoiceSerializer(invoice)
+        serializer = self.serializer_class(invoice)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
-        PUT METHOD: To update/edit an invoice
+    PUT METHOD: To update/edit an invoice
     """
     
     def put(self,request,pk):
         invoice = self.get_object(pk)
-        serializer = InvoiceSerializer(invoice, data = request.data, partial = True)
+        serializer = self.serializer_class(invoice, data = request.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status = status.HTTP_200_OK)
