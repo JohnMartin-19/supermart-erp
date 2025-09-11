@@ -7,14 +7,14 @@ from django.shortcuts import get_object_or_404
 from .models import *
 from tenants.models import *
 class CustomerListCreateAPIView(APIView):
-    
+    serializer_class = CustomerSerializer
     """
         GET METHOD: method to get all cstomers 
     """
     
     def get(self, request):
         customers = Customer.objects.all()
-        serializer = CustomerSerializer(customers,many=True)
+        serializer = self.serializer_class(customers,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -24,7 +24,7 @@ class CustomerListCreateAPIView(APIView):
     def post(self, request):
         data = request.data 
         full_name = data.get('full_name')
-        serializer = CustomerSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant=request.user.tenant)
             ActivityLogs.objects.create(
@@ -38,7 +38,7 @@ class CustomerListCreateAPIView(APIView):
         
         
 class CustomerRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = CustomerSerializer
     """
     helper method to get an instance of a customer
     """
@@ -52,7 +52,7 @@ class CustomerRetrieveUpdateDestroyAPIView(APIView):
     
     def get(self, request,pk):
         customer = self.get_object(pk)
-        serializer = CustomerSerializer(customer)
+        serializer = self.serializer_class(customer)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -62,7 +62,7 @@ class CustomerRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self,request,pk):
         customer = self.get_object(pk)
-        serializer = CustomerSerializer(customer,data = request.data, partial = True)
+        serializer = self.serializer_class(customer,data = request.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

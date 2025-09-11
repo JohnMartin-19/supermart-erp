@@ -8,6 +8,7 @@ from .models import *
 
 
 class ProductListCreateAPIView(APIView):
+    serializer_class = ProductSerializer
     """
     GET METHOD: To get all products in our inventory
     """
@@ -21,7 +22,7 @@ class ProductListCreateAPIView(APIView):
     """
     
     def post(self, request):
-        serializer = ProductSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         data = request.data
         print("DATA...:", data)
         if serializer.is_valid():
@@ -40,7 +41,7 @@ class ProductListCreateAPIView(APIView):
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
 class ProductRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = ProductSerializer
     """
     helper method to get a single instace of a product
     """
@@ -54,7 +55,7 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
     
     def get(self, request, pk):
         product = self.get_object(pk)
-        serializer = ProductSerializer(product)
+        serializer = self.serializer_class(product)
         return Response(serializer.data, status =status.HTTP_200_OK)
     
     """
@@ -63,7 +64,7 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self, request, pk):
         product = self.get_object(pk)
-        serializer = ProductSerializer(product, data = request.data,partial =True)
+        serializer = self.serializer_class(product, data = request.data,partial =True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -82,6 +83,7 @@ class ProductRetrieveUpdateDestroyAPIView(APIView):
     
     
 class InventoryListCreateAPIView(APIView):
+    serializer_class = InventorySerializer
     """GET
 
     Args:
