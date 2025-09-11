@@ -39,6 +39,7 @@ class BillListCreateBillAPIView(APIView):
             return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
         
 class BillRetrieveUpdateDestroyAPIView(APIView):
+    serializer_class = BillSerializer
     """
     just a helper method to get an instance of a bill
     """
@@ -53,7 +54,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
     
     def get(self, pk):
         bill = self.get_object(pk)
-        serializer = BillSerializer(bill)
+        serializer = self.serializer_class(bill)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
@@ -62,7 +63,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self, request, pk):
         bill = self.get_object(pk)
-        serializer = BillSerializer(bill, data = request.data)
+        serializer = self.serializer_class(bill, data = request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status = status.HTTP_200_OK)
