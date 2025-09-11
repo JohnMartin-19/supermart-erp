@@ -8,14 +8,14 @@ from django.shortcuts import get_object_or_404
 from tenants.models import *
 from django.db import transaction
 class CashDrawerListCreateAPIView(APIView):
-    
+    serializer_class = CashDrawerSerializer
     """
     GET METHOD: To get all the cash drawers in our schema
     """
     
     def get(self,request):
         cash_drawers = CashDrawer.objects.all()
-        serializer = CashDrawerSerializer(cash_drawers,many=True)
+        serializer = self.serializer_class(cash_drawers,many=True)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
@@ -23,7 +23,7 @@ class CashDrawerListCreateAPIView(APIView):
     """
     
     def post(self, request):
-        serializer = CashDrawerSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         branch = request.data.get('branch')
         opened_at = request.data.get('opened_at')
         with transaction.atomic():

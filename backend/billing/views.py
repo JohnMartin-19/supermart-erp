@@ -7,13 +7,14 @@ from django.shortcuts import get_object_or_404
 from .models import *
 from tenants.models import *
 from django.db import transaction
-
+from drf_yasg.utils import swagger_auto_schema
 class BillListCreateBillAPIView(APIView):
     serializer_class = BillSerializer
+   
     """
-    
     GET Method: to fetch all the bills in our schema
     """
+    @swagger_auto_schema(tags=['Bills'])
     
     def get(self, request):
         bills = Bill.objects.all()
@@ -23,6 +24,8 @@ class BillListCreateBillAPIView(APIView):
     """
     POST METHOD: to create a new bill
     """
+    @swagger_auto_schema(tags=['Bills'])
+    
     def post(self, request):
         data = request.data
         vendor_name = data.get('vendor_name') 
@@ -43,7 +46,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
     """
     just a helper method to get an instance of a bill
     """
-    
+    @swagger_auto_schema(tags=['Bills'])
     def get_object(self, pk):
         return get_object_or_404(Bill, pk=pk)
     
@@ -51,7 +54,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
     """
         GET METHOD:To retrieve an entire bill from schema
     """
-    
+    @swagger_auto_schema(tags=['Bills'])
     def get(self, pk):
         bill = self.get_object(pk)
         serializer = self.serializer_class(bill)
@@ -60,7 +63,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
     """
         PUT METHOD:For updating/editing a bill instance
     """
-    
+    @swagger_auto_schema(tags=['Bills'])
     def put(self, request, pk):
         bill = self.get_object(pk)
         serializer = self.serializer_class(bill, data = request.data)
@@ -72,7 +75,7 @@ class BillRetrieveUpdateDestroyAPIView(APIView):
     """
      DELETE METHOD:To delete a bill instance from schema   
     """
-    
+    @swagger_auto_schema(tags=['Bills'])
     def delete(self, pk):
         bill = self.get_object(pk)
         bill.delete()
