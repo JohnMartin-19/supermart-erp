@@ -10,7 +10,7 @@ from django.db import transaction
 
 
 class BranchListCreateAPIView(APIView):
-    
+    serializer_class = BranchSerializer
     """
     GET METHOD: To fetch all branches from our schema
     """
@@ -24,7 +24,7 @@ class BranchListCreateAPIView(APIView):
     POST METHOD: To create a new branch
     """
     def post(self,request):
-        serializer = BranchSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         data = request.data
         branch_name = data.get('branch_name')
         branch_city = data.get('city')
@@ -41,7 +41,7 @@ class BranchListCreateAPIView(APIView):
     
     
 class BranchRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = BranchSerializer
     """
     helper method to get a specific object instance of a Branch by its ID
     """
@@ -55,7 +55,7 @@ class BranchRetrieveUpdateDestroyAPIView(APIView):
     
     def get(self,request,pk):
         branch = self.get_object(pk)
-        serializer = BranchSerializer(branch)
+        serializer = self.serializer_class(branch)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     """
@@ -64,7 +64,7 @@ class BranchRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self,request,pk):
         branch = self.get_object(pk)
-        serializer = BranchSerializer(branch,data = request.data,partial = True)
+        serializer = self.serializer_class(branch,data = request.data,partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status = status.HTTP_200_OK)
@@ -83,7 +83,7 @@ class BranchRetrieveUpdateDestroyAPIView(APIView):
        
 
 class StockTransferListCreateAPIView(APIView):
-    
+    serializer_class = StockTransferSerializer
     """
     GET METHOD:To fetch all instances of stock transfers
     """  
@@ -96,14 +96,14 @@ class StockTransferListCreateAPIView(APIView):
     POST METHOD:To create a new stock transfer
     """
     def post(self,request):
-        serializer = StockTransferSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
     
 class StockTransferRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = StockTransferSerializer
     """
     helper method to get a single stock transfer instance by its ID
     """
@@ -116,7 +116,7 @@ class StockTransferRetrieveUpdateDestroyAPIView(APIView):
     """
     def get(self, request, pk):
         stock_transfer = self.get_object(pk)
-        serializer = StockTransferSerializer(stock_transfer)
+        serializer = self.serializer_class(stock_transfer)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     """
@@ -125,7 +125,7 @@ class StockTransferRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self, request, pk):
         stock_transfer = self.get_object(pk)
-        serializer = StockTransferSerializer(stock_transfer, data = request.data, partial = True)
+        serializer = self.serializer_class(stock_transfer, data = request.data, partial = True)
         if serializer.is_valid():
             return Response(serializer.data, status = status.HTTP_200_OK)
         return Response(serializer.errors)
