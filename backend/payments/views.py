@@ -71,11 +71,11 @@ class STKPushAPIView(APIView):
 
             phone_number = request.data.get('phone_number')
             amount = request.data.get('amount')
-
+            company_name = request.data.get('company_name')
             if not phone_number or not amount:
                 return Response({'error': 'Phone number and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
             
-            web_name = "M-FARM"
+            web_name = company_name
             stk_password = base64.b64encode((business_short_code + pass_key + timestamp).encode('utf-8')).decode('utf-8')
 
             print("stk coming....", request.data)
