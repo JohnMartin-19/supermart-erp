@@ -9,7 +9,7 @@ from tenants.models import *
 from django.db import transaction
 
 class BillListCreateBillAPIView(APIView):
-    
+    serializer_class = BillSerializer
     """
     
     GET Method: to fetch all the bills in our schema
@@ -26,7 +26,7 @@ class BillListCreateBillAPIView(APIView):
     def post(self, request):
         data = request.data
         vendor_name = data.get('vendor_name') 
-        serializer = BillSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         with transaction.atomic():
             if serializer.is_valid():
                 serializer.save(tenant = request.user.tenant)
