@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from tenants.models import *
 from django.db import transaction
 class SupplierListCreateAPIView(APIView):
+    serializer_class = SuppliersSerializer
     """
     GET METHOD : To get all suppliers in our db/schema
     """
@@ -21,7 +22,7 @@ class SupplierListCreateAPIView(APIView):
     POST METHOD:To add a new supplier to our system
     """
     def post(self,request):
-        serializer = SuppliersSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         company_name = request.data.get('company_name')
         with transaction.atomic():
             if serializer.is_valid():
@@ -37,7 +38,7 @@ class SupplierListCreateAPIView(APIView):
     
     
 class SupplierRetrieveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = SuppliersSerializer
     """
     helper method to get an instane of an obj
     """
@@ -60,7 +61,7 @@ class SupplierRetrieveUpdateDestroyAPIView(APIView):
     
     def put(self,request,pk):
         supplier = self.get_object(pk)
-        serializer = SuppliersSerializer(supplier,data = request.data,partial = True)
+        serializer = self.serializer_class(supplier,data = request.data,partial = True)
         return Response(serializer.data, status = status.HTTP_200_OK)
     
     def delete(self,request,pk):
@@ -71,7 +72,7 @@ class SupplierRetrieveUpdateDestroyAPIView(APIView):
     
     
 class PurchaseOrderListCreateAPIView(APIView):
-    
+    serializer_class = PurchaseOrderSerializer
     """
     GET METHOD: to get all purchase orders from our schema
     """
@@ -86,7 +87,7 @@ class PurchaseOrderListCreateAPIView(APIView):
     """
     
     def post(self, request):
-        serializer = PurchaseOrderSerializer(data = request.data)
+        serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
             serializer.save(tenant = request.user.tenant)
             return Response(serializer.data, status= status.HTTP_201_CREATED)
@@ -94,7 +95,7 @@ class PurchaseOrderListCreateAPIView(APIView):
     
     
 class PurchaseOrderRetriveUpdateDestroyAPIView(APIView):
-    
+    serializer_class = PurchaseOrderSerializer
     """
     helper method to get a single instance of a purchase order
     """
@@ -114,7 +115,7 @@ class PurchaseOrderRetriveUpdateDestroyAPIView(APIView):
     
     def put(self, request, pk):
         purchase_order = self.get_object(pk)
-        serializer =PurchaseOrderSerializer(purchase_order, data = request.data, partial = True)
+        serializer = self.serializer_class(purchase_order, data = request.data, partial = True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
