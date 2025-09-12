@@ -5,8 +5,8 @@ from rest_framework import status
 from .serializers import *
 from django.shortcuts import get_object_or_404
 from .models import *
-
-
+from django.db import transaction
+from tenants.models import *
 class ProductListCreateAPIView(APIView):
     serializer_class = ProductSerializer
     """
@@ -26,18 +26,24 @@ class ProductListCreateAPIView(APIView):
         data = request.data
         print("DATA...:", data)
         if serializer.is_valid():
-            product = serializer.save(tenant = request.user.tenant)
-            if not product.inventory_set.exists():
-                Inventory.objects.create(
-                    product=product,
-                    branch=None,
-                    current_stock=0,
-                    min_stock=0,
-                    max_stock=0,
-                    tenant=product.tenant
-                )
+            with transaction.atomic():
+                product = serializer.save(tenant = request.user.tenant)
+                if not product.inventory_set.exists():
+                    Inventory.objects.create(
+                        product=product,
+                        branch=None,
+                        current_stock=0,
+                        min_stock=0,
+                        max_stock=0,
+                        tenant=product.tenant
+                    )
+                    ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                                    action_type='invoice_created',
+                                    message=f'An invoice with the  "{invoice_number}" for  {customer_name} has been generated.'
+                    )
 
-            return Response(serializer.data, status = status.HTTP_201_CREATED)
+                return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
 class ProductRetrieveUpdateDestroyAPIView(APIView):
