@@ -54,7 +54,7 @@ export function Inventory() {
   const [totalInventoryValue, setTotalInventoryValue] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // State for the new product form
+ 
   const [newProduct, setNewProduct] = useState({
     name: '',
     sku: '',
@@ -67,7 +67,7 @@ export function Inventory() {
   });
 
   const accessToken = localStorage.getItem('access_token');
-
+  const tenantDomain = localStorage.getItem('tenant_domain')
   const fetchProducts = async () => {
     setIsLoading(true);
     setError(null);
@@ -78,7 +78,7 @@ export function Inventory() {
     }
 
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/inventory/products/', {
+      const response = await fetch('http://${tanantDomain}:8000/api/v1/inventory/products/', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ export function Inventory() {
     };
 
     try {
-      const response = await fetch('http://murimart.localhost:8000/api/v1/inventory/products/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/inventory/products/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
