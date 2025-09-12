@@ -78,7 +78,7 @@ export function Inventory() {
     }
 
     try {
-      const response = await fetch('http://${tanantDomain}:8000/api/v1/inventory/products/', {
+      const response = await fetch(`http://${tenantDomain}:8000/api/v1/inventory/products/`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
