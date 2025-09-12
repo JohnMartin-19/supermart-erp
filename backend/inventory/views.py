@@ -25,6 +25,8 @@ class ProductListCreateAPIView(APIView):
         serializer = self.serializer_class(data = request.data)
         data = request.data
         print("DATA...:", data)
+        sku_number = data.get("sku")
+        supplier = data.get('supplier')
         if serializer.is_valid():
             with transaction.atomic():
                 product = serializer.save(tenant = request.user.tenant)
@@ -39,8 +41,8 @@ class ProductListCreateAPIView(APIView):
                     )
                     ActivityLogs.objects.create(
                         tenant=request.user.tenant,
-                                    action_type='invoice_created',
-                                    message=f'An invoice with the  "{invoice_number}" for  {customer_name} has been generated.'
+                        action_type='inventory_item_created',
+                        message=f'A product item from  "{supplier}" with {sku_number} has been added.'
                     )
 
                 return Response(serializer.data, status = status.HTTP_201_CREATED)
