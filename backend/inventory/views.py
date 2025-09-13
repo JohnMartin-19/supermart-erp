@@ -24,12 +24,16 @@ class ProductListCreateAPIView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data = request.data)
         data = request.data
-        print("DATA...:", data)
         sku_number = data.get("sku")
         supplier = data.get('supplier')
         if serializer.is_valid():
             with transaction.atomic():
                 product = serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                        tenant=request.user.tenant,
+                        action_type='inventory_item_created',
+                        message=f'A product item from  {supplier} with #{sku_number} has been added.'
+                    )
                 if not product.inventory_set.exists():
                     Inventory.objects.create(
                         product=product,
@@ -39,12 +43,6 @@ class ProductListCreateAPIView(APIView):
                         max_stock=0,
                         tenant=product.tenant
                     )
-                    ActivityLogs.objects.create(
-                        tenant=request.user.tenant,
-                        action_type='inventory_item_created',
-                        message=f'A product item from  "{supplier}" with {sku_number} has been added.'
-                    )
-
                 return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
