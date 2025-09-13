@@ -56,7 +56,7 @@ class RegisterAPIView(APIView):
                         
                     )
                     ActivityLogs.objects.create(
-                        tenant=request.user.tenant,
+                        tenant=user.tenant,
                         action_type='customer_added',
                         message=f'Your account was created and set up gracefully! "{user.username}" added.'
             )
