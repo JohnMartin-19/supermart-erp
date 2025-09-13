@@ -32,7 +32,7 @@ import {
   Building2,
   Banknote,
   LogOut,
-  User, // New: Import the User icon
+  User,
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -118,7 +118,7 @@ const coreModulesItems = [
     title: 'Payroll',
     icon: Users,
   },
-  // New: Added Profile and Settings menu items
+  
   {
     id: 'profile',
     title: 'Profile',
@@ -132,8 +132,7 @@ const coreModulesItems = [
 ];
 
 const systemItems = [
-  // This section can be repurposed or left as is, since settings is now in coreModulesItems
-];
+]
 
 export function Layout({ children, activeModule, onModuleChange, onLogout }: LayoutProps) {
   const [isDark, setIsDark] = useState(false);

@@ -75,7 +75,7 @@ class Product(models.Model):
     
 class Order(models.Model):
     order_id = models.CharField(max_length=30, editable=False, blank=True)
-    timestamp = models.DateTimeField(default=timezone.now())
+    timestamp = models.DateTimeField(default=timezone.now)
     cashier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     total_amount = models.DecimalField(decimal_places=2,max_digits=10, default=0)
     total_vat = models.DecimalField(decimal_places=2, max_digits=10, default=0)
