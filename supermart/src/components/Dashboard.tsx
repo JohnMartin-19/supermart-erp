@@ -219,7 +219,7 @@ export function Dashboard({ onQuickInvoice, onQuickBilling, onGSTCalculator, onQ
       <div className="flex justify-between items-center">
         <div>
           <h1>Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening with your business.</p>
+          <p className="text-muted-foreground">Nice to have you on-board! Here are your latest business updates!.</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={onQuickInvoice} className="gap-2 bg-blue-600 hover:bg-blue-700">
