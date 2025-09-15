@@ -97,11 +97,17 @@ class StockTransferListCreateAPIView(APIView):
     """
     def post(self,request):
         serializer = self.serializer_class(data = request.data)
-        if serializer.is_valid():
-            serializer.save(tenant = request.user.tenant)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
-    
+        with transaction.atomic():
+            if serializer.is_valid():
+                serializer.save(tenant = request.user.tenant)
+                ActivityLogs.objects.create(
+                                tenant=request.user.tenant,
+                                action_type='stock_transfer_initiated',
+                                message=f'A new branch, "{branch_name}" in {branch_county} county has been addded.'
+                        )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
+        
 class StockTransferRetrieveUpdateDestroyAPIView(APIView):
     serializer_class = StockTransferSerializer
     """
