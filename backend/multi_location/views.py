@@ -96,6 +96,10 @@ class StockTransferListCreateAPIView(APIView):
     POST METHOD:To create a new stock transfer
     """
     def post(self,request):
+        data = request.data
+        print('DTATA...', data)
+        product = data.get('product')
+        branch_destination = data.get('to_branch')
         serializer = self.serializer_class(data = request.data)
         with transaction.atomic():
             if serializer.is_valid():
@@ -103,7 +107,7 @@ class StockTransferListCreateAPIView(APIView):
                 ActivityLogs.objects.create(
                                 tenant=request.user.tenant,
                                 action_type='stock_transfer_initiated',
-                                message=f'A new branch, "{branch_name}" in {branch_county} county has been addded.'
+                                message=f'A stock transfer of  {product} to {branch_destination} has been initiated.'
                         )
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
