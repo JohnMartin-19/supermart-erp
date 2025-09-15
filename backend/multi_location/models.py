@@ -1,6 +1,6 @@
 from django.db import models
 from django_tenants.models import TenantMixin
-
+from products.models import *
 
 BRANCH_COUNTIES = [
     ('Mombasa', 'Mombasa'),
