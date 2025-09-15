@@ -54,7 +54,7 @@ class Product(models.Model):
     initial_stock = models.PositiveIntegerField(default=0)
     current_stock = models.PositiveIntegerField(default=0)
     minimum_stock_level = models.PositiveIntegerField(default=0) 
-    branch = models.ForeignKey('multi_location.Branch', on_delete=models.CASCADE, related_name='products')
+    branch = models.ForeignKey('multi_location.Branch', on_delete=models.CASCADE, related_name='products', null=True)
     
     # attributes & status
     vat_applicable = models.BooleanField(default=False)
@@ -77,17 +77,7 @@ class Product(models.Model):
         if self.cost_price > 0:
             return ((self.selling_price - self.cost_price) / self.cost_price) * 100
         return 0 
-    @property
-    def total_stock_value(self):
-        """
-        Calculates the total stock value of all products in this branch.
-        """
-        stock_value = self.products.annotate(
-            item_value=F('cost_price') * F('current_stock')
-        ).aggregate(total=Sum('item_value'))['total']
-
-        return stock_value if stock_value is not None else 0
-
+    
     
 class Order(models.Model):
     order_id = models.CharField(max_length=30, editable=False, blank=True)
