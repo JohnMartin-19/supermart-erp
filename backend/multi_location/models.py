@@ -74,6 +74,18 @@ class Branch(models.Model):
     def __str__(self):
         return self.branch_name
     
+    @property
+    def total_stock_value(self):
+        """
+        Calculates the total stock value of all products in this branch.
+        """
+        stock_value = self.products.annotate(
+            item_value=F('cost_price') * F('current_stock')
+        ).aggregate(total=Sum('item_value'))['total']
+
+        return stock_value if stock_value is not None else 0
+
+    
     verbose_name_plural = 'branches'
     
 class StockTransfer(models.Model):
