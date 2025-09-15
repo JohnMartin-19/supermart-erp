@@ -3,11 +3,11 @@ from .models import *
 
 
 class BranchSerializer(serializers.ModelSerializer):
-    
+    total_stock_value = serializers.DecimalField(max_digits= 10, decimal_places= 2, read_only = True)
     
     class Meta:
         model = Branch
-        fields = ['id','branch_name','manager','address','city',
+        fields = ['id','branch_name','manager','address','city','total_stock_value',
                   'county','phone_number','operating_hours','is_active','tenant']
         read_only_fields = ['tenant']
         
