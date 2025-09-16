@@ -24,7 +24,7 @@ class Employees(models.Model):
     
     
 class Allowance(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='allowances')
+    employee = models.ForeignKey(Employees, on_delete=models.CASCADE, related_name='allowances')
     name = models.CharField(max_length=100)  
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE)
@@ -45,7 +45,7 @@ class PayrollRun(models.Model):
     
     
 class Payslip(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employees, on_delete=models.CASCADE)
     payroll_run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE, related_name='payslips')
     gross_salary = models.DecimalField(max_digits=10, decimal_places=2)
     total_deductions = models.DecimalField(max_digits=10, decimal_places=2)
