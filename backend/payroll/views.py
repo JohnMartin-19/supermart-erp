@@ -29,10 +29,16 @@ class EmployeeListCreateAPIView(APIView):
         serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
             with transaction.atomic():
+                serializer.save(tenant = request.user.tenant)
                 ActivityLogs.objects.create(
                     tenant=request.user.tenant,
-                        action_type='product_created',
-                        message=f'"{product_name}" has been added to the catalog .'
+                        action_type='employee_created',
+                        message=f'A new employee by the name "{employee_name}" has been added.'
                 )
+                return Response({
+                    "message": "Success",
+                    "data": serializer.data
+                },status = status.HTTP_200_OK)
+        return Response({"message":"Failed"}, status = status.HTTP_400_BAD_REQUEST)
                 
         

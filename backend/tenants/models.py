@@ -34,6 +34,7 @@ class Domain(DomainMixin):
 class ActivityLogs(models.Model):
     ACTION_CHOICES = [
         ('invoice_created', 'Invoice Created'),
+        ('employee_created', 'Employee Created'),
         ('bill_created', 'Bill Created'),
         ('branch_created', 'Branch Created'),
         ('stock_transfer_initiated', 'Stock Transfer Initiated'),
