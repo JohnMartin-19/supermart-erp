@@ -32,7 +32,7 @@ class CashDrawerListCreateAPIView(APIView):
                 ActivityLogs.objects.create(
                         tenant=request.user.tenant,
                         action_type='cash_drawer_created',
-                        message=f'Cash Drawer for "{branch}" created  at {opened_at}.'
+                        message=f'Cash Drawer for "{branch}" created  at successfully.'
                 )
                 return Response(serializer.data, status = status.HTTP_201_CREATED)
             return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
