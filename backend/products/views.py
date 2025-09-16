@@ -14,7 +14,7 @@ class ProductListCreateAPIView(APIView):
     def get(self, request):
         products = Product.objects.all()
         serializer = ProductSerializer(products,many=True)
-        return Response(serializer.data)
+        return Response(serializer.data,status = status.HTTP_200_OK)
     
     """
     POST METHOD: To create a new product

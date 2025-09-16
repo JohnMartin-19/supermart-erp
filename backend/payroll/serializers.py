@@ -3,4 +3,9 @@ from rest_framework import serializers
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    pass
+    
+    class Meta:
+        model = Employees
+        fields = ['id','full_name','employee_id','designation',
+                  'department','salary','is_active','tenant']
+        read_only_fields = ['tenant']

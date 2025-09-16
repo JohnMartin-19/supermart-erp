@@ -10,7 +10,7 @@ class Department(models.Model):
     def __str__(self):
         return self.name
     
-class Employee(models.Model):
+class Employees(models.Model):
     full_name = models.CharField(max_length=255)
     employee_id = models.CharField(max_length=50, unique=True)
     designation = models.CharField(max_length=100)
