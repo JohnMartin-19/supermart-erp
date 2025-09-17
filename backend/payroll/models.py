@@ -14,7 +14,7 @@ class Employees(models.Model):
     full_name = models.CharField(max_length=255)
     employee_id = models.CharField(max_length=50, unique=True)
     designation = models.CharField(max_length=100)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
+    department = models.CharField(max_length=100, null=True)
     base_salary = models.DecimalField(max_digits=10, decimal_places=2)
     is_active = models.BooleanField(default=True)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE)

@@ -43,7 +43,7 @@ export function Payroll() {
   const [loading, setLoading] = useState(true); // Loading state
   const [isDialogOpen, setIsDialogOpen] = useState(false); // State to control the dialog
   const [newEmployee, setNewEmployee] = useState({
-    name: '',
+    full_name: '',
     designation: '',
     department: '',
     baseSalary: '',
@@ -51,8 +51,6 @@ export function Payroll() {
     allowances: '',
   });
   const tenantDomain = localStorage.getItem('tenant_domain')
-
-  // API endpoint
   const API_URL = `http://${tenantDomain}:8000/api/v1/payroll/employees/`;
 
   // ----------------------- FETCH EMPLOYEES -----------------------
@@ -73,9 +71,7 @@ export function Payroll() {
     };
 
     fetchEmployees();
-  }, []); // The empty array ensures this effect runs only once when the component mounts
-
-  // ----------------------- POST NEW EMPLOYEE -----------------------
+  }, []); 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setNewEmployee(prevState => ({
@@ -94,7 +90,7 @@ export function Payroll() {
   const handleAddEmployee = async () => {
     try {
       const payload = {
-        name: newEmployee.name,
+        full_name: newEmployee.full_name,
         designation: newEmployee.designation,
         department: newEmployee.department,
         base_salary: parseFloat(newEmployee.baseSalary),
@@ -119,7 +115,7 @@ export function Payroll() {
 
       // Reset form fields
       setNewEmployee({
-        name: '',
+        full_name: '',
         designation: '',
         department: '',
         baseSalary: '',
@@ -187,8 +183,8 @@ export function Payroll() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Enter full name" value={newEmployee.name} onChange={handleInputChange} />
+                    <Label htmlFor="full_name">Full Name</Label>
+                    <Input id="full_name" placeholder="Enter full name" value={newEmployee.full_name} onChange={handleInputChange} />
                   </div>
                   <div>
                     <Label htmlFor="designation">Designation</Label>
@@ -203,10 +199,10 @@ export function Payroll() {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="it">IT</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="finance">Finance</SelectItem>
-                        <SelectItem value="hr">HR</SelectItem>
+                        <SelectItem value="IT">IT</SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Finance">Finance</SelectItem>
+                        <SelectItem value="HR">HR</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
