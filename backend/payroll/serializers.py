@@ -7,5 +7,5 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employees
         fields = ['id','full_name','employee_id','designation',
-                  'department','salary','is_active','tenant']
+                  'department','is_active','tenant']
         read_only_fields = ['tenant']
