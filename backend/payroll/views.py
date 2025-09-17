@@ -36,9 +36,35 @@ class EmployeeListCreateAPIView(APIView):
                         message=f'A new employee by the name "{employee_name}" has been added.'
                 )
                 return Response({
-                    "message": "Success",
+                    "message": "Employee created successfully",
                     "data": serializer.data
                 },status = status.HTTP_200_OK)
-        return Response({"message":"Failed"}, status = status.HTTP_400_BAD_REQUEST)
+        return Response({"message":"Failed to create employee"}, status = status.HTTP_400_BAD_REQUEST)
                 
+class EmployeeRetrieveUpdateDestroyAPIView(APIView):
+    
+    serializer_class = EmployeeSerializer
+     
+    def get_object(self,pk):
+        '''
+        helper method
+        '''
+        return get_object_or_404(pk=pk)
+    
+    def get(self,request,pk):
+        employee = self.get_object(pk)
+        serializer = self.serializer_class(employee)
+        return Response({'message':'Success','data':serializer.data}, status= status.HTTP_200_OK)
+    
+    def put(self, request, pk):
+        employee = self.get_object(pk=pk)
+        serializer = self.serializer_class(employee, data = request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message':'Employee updated successfully', 'data':serializer.data}, status = status.HTTP_200_OK)
+        return Response({'message':'Failed to update the employee entity','data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
+    def delete(self, pk):
+        employee = self.get_object(pk)
+        employee.delete()
+        return Response({'message':'Employee deleted successfully'}, status= status.HTTP_204_NO_CONTENT)

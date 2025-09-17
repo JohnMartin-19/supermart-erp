@@ -35,6 +35,7 @@ urlpatterns = [
     
     #core apps urls
     path('api/v1/inventory/', include('inventory.urls')),
+    path('api/v1/payroll/', include('payroll.urls')),
     #swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/schema/redoc/", SpectacularRedocView.as_view(
