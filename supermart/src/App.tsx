@@ -183,8 +183,10 @@ export default function App() {
 
         const data = await response.json();
         const tenant = data.tenant_domain
+        const tenant_id= data.tenant_id
         if(tenant){
           localStorage.setItem('tenant_domain', tenant)
+          localStorage.setItem('tenant_id',tenant_id)
         }
         if (response.ok) {
             setTimeout(() => {

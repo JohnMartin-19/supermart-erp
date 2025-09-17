@@ -28,7 +28,7 @@ class EmployeeListCreateAPIView(APIView):
         """
         data = request.data
         print('DATTATTA:',data)
-        employee_name = data.get('name')
+        employee_name = data.get('full_name')
         timestamp = datetime.now()
         unique_suffix = uuid.uuid4().hex[:6]
         serializer = self.serializer_class(data = request.data)
