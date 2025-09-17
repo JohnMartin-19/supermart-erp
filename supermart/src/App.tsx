@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { LandingPage } from './components/LandingPage';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Accounting } from './components/Accounting';
@@ -87,15 +88,16 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
-  const [isLogoutLoading, setIsLogoutLoading] = useState(false); 
+  const [isLogoutLoading, setIsLogoutLoading] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
-  const [showDelayOverlay, setShowDelayOverlay] = useState(false); 
+  const [showDelayOverlay, setShowDelayOverlay] = useState(false);
+  const [currentView, setCurrentView] = useState('landing'); // Added state for view
 
   useEffect(() => {
-    
     const accessToken = localStorage.getItem('access_token');
     if (accessToken) {
       setIsLoggedIn(true);
+      setCurrentView('app'); // Set view to 'app' if already logged in
     }
   }, []);
 
@@ -113,7 +115,6 @@ export default function App() {
   const handleQuickPayment = () => {
     setActiveModule('quick-payment');
   };
-
 
   const renderModule = () => {
     switch (activeModule) {
@@ -165,9 +166,10 @@ export default function App() {
         );
     }
   };
+
   const handleSignUp = async (userData: any) => {
-    setIsAuthLoading(true); 
-    setShowDelayOverlay(true); 
+    setIsAuthLoading(true);
+    setShowDelayOverlay(true);
     setAuthError('');
 
     try {
@@ -185,24 +187,23 @@ export default function App() {
           localStorage.setItem('tenant_domain', tenant)
         }
         if (response.ok) {
-            
             setTimeout(() => {
-                setShowDelayOverlay(false); 
+                setShowDelayOverlay(false);
                 toast.success('Account created successfully!', {
                     description: 'You can now log in with your new credentials.',
                 });
-                setShowSignup(false); 
-            }, 5000); 
+                setShowSignup(false);
+            }, 5000);
         } else {
             setAuthError(data.detail || 'Registration failed. Please try again.');
-            setShowDelayOverlay(false); 
+            setShowDelayOverlay(false);
         }
     } catch (error) {
         setAuthError('An error occurred. Please try again later.');
         console.error('Registration error:', error);
-        setShowDelayOverlay(false); 
+        setShowDelayOverlay(false);
     } finally {
-        setIsAuthLoading(false); 
+        setIsAuthLoading(false);
     }
   };
 
@@ -224,11 +225,11 @@ export default function App() {
             localStorage.setItem('access_token', data.access);
             localStorage.setItem('refresh_token', data.refresh);
 
-           
-            const tenantDomain = data.tenant_domain; 
+            const tenantDomain = data.tenant_domain;
             localStorage.setItem('tenant_domain', tenantDomain);
 
             setIsLoggedIn(true);
+            setCurrentView('app'); // Set view to 'app' on successful login
         } else {
             setAuthError(data.detail || 'Login failed. Please check your credentials.');
         }
@@ -240,14 +241,11 @@ export default function App() {
     }
 };
 
-  
-
   const handleLogout = async () => {
-    setIsLogoutLoading(true); 
+    setIsLogoutLoading(true);
     const accessToken = localStorage.getItem('access_token');
     const refreshToken = localStorage.getItem('refresh_token');
-  
-   
+
     fetch('http://murimart.localhost:8000/api/v1/authentication/logout/', {
       method: 'POST',
       headers: {
@@ -256,20 +254,22 @@ export default function App() {
       },
       body: JSON.stringify({ refresh: refreshToken }),
     }).catch(error => {
-      
       console.error('Logout API call failed:', error);
     });
-  
-    
+
     setTimeout(() => {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       setIsLoggedIn(false);
       setActiveModule('dashboard');
-      setIsLogoutLoading(false); 
-      window.location.href = '/login'; 
+      setIsLogoutLoading(false);
+      setCurrentView('landing'); // Return to the landing page after logout
     }, 5000);
   };
+
+  if (currentView === 'landing') {
+    return <LandingPage onEnterApp={() => setCurrentView('app')} />;
+  }
 
   if (!isLoggedIn) {
     if (showSignup) {
@@ -302,13 +302,10 @@ export default function App() {
         {renderModule()}
         <FloatingActionButton
           onQuickInvoice={handleQuickInvoice}
-          onQuickBilling={handleQuickBilling} 
-          onGSTCalculator={function (): void {
-            throw new Error('Function not implemented.');
-          } }
-          onQuickPayment={function (): void {
-            throw new Error('Function not implemented.');
-          } }        />
+          onQuickBilling={handleQuickBilling}
+          onGSTCalculator={handleGSTCalculator}
+          onQuickPayment={handleQuickPayment}
+        />
       </Layout>
       <Toaster />
     </>
