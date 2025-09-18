@@ -9,9 +9,9 @@ from django.shortcuts import get_object_or_404
 from tenants.models import *
 from django.db import transaction
 from datetime import datetime, timezone
-
+from rest_framework.permissions import IsAuthenticated
 class EmployeeListCreateAPIView(APIView):
-    
+    # permission_classes = [IsAuthenticated]
     serializer_class = EmployeeSerializer
     
     def get(self,request):
@@ -27,7 +27,6 @@ class EmployeeListCreateAPIView(APIView):
         POST METHOD: To create a new employee
         """
         data = request.data
-        print('DATTATTA:',data)
         employee_name = data.get('full_name')
         timestamp = datetime.now()
         unique_suffix = uuid.uuid4().hex[:6]
