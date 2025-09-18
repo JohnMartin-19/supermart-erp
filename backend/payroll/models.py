@@ -132,7 +132,7 @@ def calculate_paye(taxable_income):
     bands = [
         (24000, Decimal('0.10')),
         (32333, Decimal('0.25')),
-        (Decimal('999999999'), Decimal('0.30')),  # upper cap
+        (Decimal('999999999'), Decimal('0.30')), 
     ]
     tax = Decimal('0')
     prev_limit = 0

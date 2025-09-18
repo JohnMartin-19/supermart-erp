@@ -72,3 +72,39 @@ class EmployeeRetrieveUpdateDestroyAPIView(APIView):
         employee = self.get_object(pk)
         employee.delete()
         return Response({'message':'Employee deleted successfully'}, status= status.HTTP_204_NO_CONTENT)
+    
+    
+class PayrollProcessView(APIView):
+    def post(self, request):
+        tenant = request.user.tenant  
+        period_start = request.data.get("period_start_date")
+        period_end = request.data.get("period_end_date")
+
+        with transaction.atomic():
+            payroll_run = PayrollRun.objects.create(
+                period_start_date=period_start,
+                period_end_date=period_end,
+                tenant=tenant
+            )
+
+            payslip_data = []
+            employees = Employees.objects.filter(tenant=tenant, is_active=True)
+
+            for emp in employees:
+                payslip = calculate_payslip(emp, payroll_run)
+                payslip_data.append({
+                    "employee": emp.full_name,
+                    "gross_salary": payslip.gross_salary,
+                    "total_deductions": payslip.total_deductions,
+                    "net_salary": payslip.net_salary,
+                })
+                ActivityLogs.objects.create(
+                    tenant=request.user.tenant,
+                    action_type='product_created',
+                    message=f'Payroll from {period_start} to {period_end} has been processed successfully.'
+                )
+
+        return Response(
+            {"message": "Payroll processed successfully", "payslips": payslip_data},
+            status=status.HTTP_201_CREATED
+        )

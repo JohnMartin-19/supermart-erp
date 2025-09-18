@@ -19,7 +19,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Label } from './ui/label';
 
-import { Toaster,toast } from 'sonner';
+import { Toaster, toast } from 'sonner';
 
 interface Employee {
   id: number;
@@ -30,8 +30,9 @@ interface Employee {
   is_active: boolean; 
   tenant: number;
   base_salary: string; 
+  // Add other properties that are returned in the GET response to avoid issues
+  // If the POST response contains them, they'll be added here as well.
 }
-
 
 export function Payroll() {
   const [selectedTab, setSelectedTab] = useState('employees');
@@ -47,35 +48,34 @@ export function Payroll() {
     allowances: '',
   });
 
-  const tenantDomain = localStorage.getItem('tenant_domain')
+  const tenantDomain = localStorage.getItem('tenant_domain');
   const API_URL = `http://${tenantDomain}:8000/api/v1/payroll/employees/`;
 
-  // ----------------------- FETCH EMPLOYEES -----------------------
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const response = await fetch(API_URL, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(API_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        const data = await response.json();
-        setEmployees(data);
-      } catch (error) {
-        console.error("Failed to fetch employees:", error);
-      } finally {
-        setLoading(false);
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    };
+      const data = await response.json();
+      setEmployees(data);
+    } catch (error) {
+      console.error("Failed to fetch employees:", error);
+      toast.error("Failed to load employees.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchEmployees();
   }, [API_URL]);
-
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -85,14 +85,13 @@ export function Payroll() {
     }));
   };
 
-  const handleSelectChange = (value: string, id: string) => {
+  const handleSelectChange = (value: string) => {
     setNewEmployee(prevState => ({
       ...prevState,
-      [id]: value,
+      department: value,
     }));
   };
 
-  // ----------------------- POST NEW EMPLOYEE -----------------------
   const handleAddEmployee = async () => {
     try {
       const payload = {
@@ -120,7 +119,10 @@ export function Payroll() {
         throw new Error(errorData.detail || 'Failed to add employee');
       }
 
-      const newEmployeeData = await response.json();
+      // -------------------- CORRECTION --------------------
+      // The API should return the newly created employee object.
+      // We will add it directly to the state.
+      const newEmployeeData: Employee = await response.json();
       setEmployees(prevEmployees => [...prevEmployees, newEmployeeData]);
 
       setNewEmployee({
@@ -132,22 +134,19 @@ export function Payroll() {
         allowances: '',
       });
       setIsDialogOpen(false);
-      // Replaced alert with a success toast
       toast.success('Employee added successfully!');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to add employee:", error);
-      // Replaced alert with an error toast
       toast.error(`Failed to add employee: ${error.message}`);
     }
   };
 
-
   const payrollSummary = {
     totalEmployees: employees.length,
-    totalGrossSalary: employees.reduce((sum, emp) => sum + (parseFloat(emp.base_salary) || 0) + (parseFloat(emp.hra) || 0) + (parseFloat(emp.allowances) || 0), 0),
-    totalDeductions: 0, // No deduction data in the provided API response
-    totalNetSalary: 0,  // No net salary data in the provided API response
+    totalGrossSalary: employees.reduce((sum, emp) => sum + parseFloat(emp.base_salary), 0),
+    totalDeductions: 0,
+    totalNetSalary: employees.reduce((sum, emp) => sum + parseFloat(emp.base_salary), 0),
     pfContribution: 0,
     esiContribution: 0,
     tdsDeducted: 0
@@ -169,7 +168,7 @@ export function Payroll() {
 
   return (
     <div className="p-6 space-y-6">
-      <Toaster position="top-right" /> {/* Add the Toaster component */}
+      <Toaster position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           <h1>Payroll Management</h1>
@@ -205,7 +204,7 @@ export function Payroll() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="department">Department</Label>
-                    <Select onValueChange={(value) => handleSelectChange(value, 'department')}>
+                    <Select onValueChange={(value) => handleSelectChange(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
@@ -239,7 +238,6 @@ export function Payroll() {
         </div>
       </div>
 
-      {/* Payroll Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -247,7 +245,7 @@ export function Payroll() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{payrollSummary.totalEmployees}</div>
+            <div className="text-2xl font-bold text-yellow-400">{payrollSummary.totalEmployees}</div>
             <p className="text-xs text-muted-foreground">Active employees</p>
           </CardContent>
         </Card>
@@ -258,7 +256,7 @@ export function Payroll() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">KSH{payrollSummary.totalGrossSalary?.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-500">KSH{payrollSummary.totalGrossSalary?.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Monthly total</p>
           </CardContent>
         </Card>
@@ -269,7 +267,7 @@ export function Payroll() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">KSH{payrollSummary.totalDeductions?.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-red-500">KSH{payrollSummary.totalDeductions?.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">PF, ESI, TDS</p>
           </CardContent>
         </Card>
@@ -336,17 +334,14 @@ export function Payroll() {
                       <TableRow key={employee.id}>
                         <TableCell>
                           <div>
-                            {/* Changed to full_name and employee_id to match API */}
                             <p className="font-medium">{employee.full_name}</p>
                             <p className="text-sm text-muted-foreground">{employee.employee_id}</p>
                           </div>
                         </TableCell>
                         <TableCell>{employee.designation}</TableCell>
                         <TableCell>{employee.department}</TableCell>
-                        {/* Changed to base_salary */}
                         <TableCell className="text-right">KSH{parseFloat(employee.base_salary).toLocaleString()}</TableCell>
                         <TableCell>
-                          {/* Changed to is_active and updated badge logic */}
                           <Badge variant={employee.is_active ? 'default' : 'secondary'}>
                             {employee.is_active ? 'Active' : 'Inactive'}
                           </Badge>
