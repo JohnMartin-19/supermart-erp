@@ -188,3 +188,90 @@
 html {
   font-size: var(--font-size);
 }
+/* Animated Border Animations */
+@keyframes borderRun {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(3, 2, 19, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(3, 2, 19, 0.6), 0 0 30px rgba(3, 2, 19, 0.4);
+  }
+}
+
+.animated-border {
+  position: relative;
+  padding: 2px;
+  border-radius: calc(var(--radius) + 2px);
+  background: linear-gradient(
+    45deg,
+    transparent 25%,
+    rgba(3, 2, 19, 0.8) 50%,
+    transparent 75%,
+    rgba(3, 2, 19, 0.6) 100%
+  );
+  background-size: 200% 200%;
+  animation: borderRun 2s linear infinite;
+}
+
+.animated-border:hover {
+  animation: borderRun 1s linear infinite, borderGlow 2s ease-in-out infinite;
+}
+
+.animated-border > * {
+  border-radius: var(--radius);
+  background: var(--background, #fff); /* fallback */
+  color: var(--foreground, #000);  
+  position: relative;
+  z-index: 1;
+}
+
+.animated-card-border {
+  position: relative;
+  padding: 2px;
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.animated-card-border:hover {
+  background: linear-gradient(
+    45deg,
+    transparent 25%,
+    rgba(3, 2, 19, 0.6) 50%,
+    transparent 75%,
+    rgba(3, 2, 19, 0.4) 100%
+  );
+  background-size: 200% 200%;
+  animation: borderRun 2s linear infinite;
+}
+
+.animated-card-border:hover .card {
+  border: none;
+}
+
+.dark .animated-border {
+  background: linear-gradient(
+    45deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.8) 50%,
+    transparent 75%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
+}
+
+.dark .animated-card-border:hover {
+  background: linear-gradient(
+    45deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 75%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+}
