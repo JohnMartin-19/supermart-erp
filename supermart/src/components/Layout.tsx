@@ -150,6 +150,9 @@ export function Layout({ children, activeModule, onModuleChange, onLogout }: Lay
         if (decodedPayload.company_name) {
           setCompanyName(decodedPayload.company_name);
         }
+        if (decodedPayload.tenant_id) {
+          localStorage.setItem('tenant_id',decodedPayload.tenant_id)  
+        }
       } catch (e) {
         console.error("Failed to decode JWT token", e);
       }

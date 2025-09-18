@@ -89,13 +89,15 @@ class LoginAPIView(TokenObtainPairView):
                     tenant_domain = domain.domain
                 except Domain.DoesNotExist:
                     pass
-
-        
+        tenant_id = user.tenant_id
+        print('T3nantID:',tenant_id)
         response.data['tenant_domain'] = tenant_domain
         response.data['user_data'] = {
             'username': user.username,
+            'tenant_id': tenant_id,
             'company_name': getattr(user, 'company_name', None),
             'phone_number': getattr(user, 'phone_number', None),
+            
         }
 
         return response

@@ -37,6 +37,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['username'] = user.username
+        token['tenant_id'] = user.tenant_id
         token['company_name'] = getattr(user, 'company_name',None)
         token ['phone_number'] = getattr(user, 'phone_number', None)
         token['tenant_schema'] = connection.schema_name
