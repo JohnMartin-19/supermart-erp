@@ -1,6 +1,7 @@
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { motion } from "framer-motion";
 
 import { 
   ShoppingCart, 
@@ -172,7 +173,12 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <motion.nav 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50"
+      >
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Building2 className="h-8 w-8 text-primary" />
@@ -186,16 +192,23 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           </div>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={onEnterApp}>Sign In</Button>
-            <Button onClick={onEnterApp}>Start Free Trial</Button>
+            <div className="animated-border">
+              <Button onClick={onEnterApp}>Start Free Trial</Button>
+            </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Hero Section */}
       <section className="py-20 lg:py-32">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+            <motion.div 
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="space-y-8"
+            >
               <div className="space-y-4">
                 <Badge variant="secondary" className="w-fit">
                   <Globe className="h-4 w-4 mr-2" />
@@ -211,10 +224,12 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="text-lg px-8 py-6" onClick={onEnterApp}>
-                  Start Free 30-Day Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                <div className="animated-border">
+                  <Button size="lg" className="text-lg px-8 py-6" onClick={onEnterApp}>
+                    Start Free 30-Day Trial
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
                 <Button variant="outline" size="lg" className="text-lg px-8 py-6" onClick={onEnterApp}>
                   Watch Demo
                 </Button>
@@ -234,9 +249,14 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   <div className="text-sm text-muted-foreground">System Uptime</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="relative">
+            <motion.div 
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="relative"
+            >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src="https://images.unsplash.com/photo-1671427478482-2968e71a6311?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzdXBlcm1hcmtldCUyMGludGVyaW9yJTIwS2VueWF8ZW58MXx8fHwxNzU4MDc4MjAzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
@@ -249,7 +269,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   <div className="text-lg font-medium">Powered by Our ERP System</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -257,7 +277,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       {/* Features Section */}
       <section id="features" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center space-y-4 mb-16">
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center space-y-4 mb-16"
+          >
             <Badge variant="secondary" className="w-fit mx-auto">
               <BarChart3 className="h-4 w-4 mr-2" />
               Comprehensive Features
@@ -268,11 +294,19 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               From point-of-sale to financial reporting, our ERP system covers every aspect of supermarket operations with Kenya-specific compliance built in.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="relative border-2 hover:border-primary/20 transition-colors">
+              <motion.div
+                key={index}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="animated-card-border"
+              >
+                <Card className="relative border-2 hover:border-primary/20 transition-colors h-full">
                 <CardHeader className="space-y-4">
                   <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                     <feature.icon className="h-6 w-6 text-primary" />
@@ -290,6 +324,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   </CardDescription>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -299,7 +334,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       <section id="benefits" className="py-20">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
+            <motion.div 
+              initial={{ x: -50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
               <div className="space-y-4">
                 <Badge variant="secondary" className="w-fit">
                   <TrendingUp className="h-4 w-4 mr-2" />
@@ -329,13 +370,21 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 ))}
               </div>
 
-              <Button size="lg" className="text-lg px-8 py-6">
-                See All Features
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
+              <div className="animated-border">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  See All Features
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </motion.div>
 
-            <div className="relative">
+            <motion.div 
+              initial={{ x: 50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGFuYWx5dGljcyUyMGRhc2hib2FyZCUyMHNjcmVlbnxlbnwxfHx8fDE3NTgwMTI1NjF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
@@ -344,7 +393,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -352,7 +401,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       {/* Testimonials Section */}
       <section id="testimonials" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center space-y-4 mb-16">
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center space-y-4 mb-16"
+          >
             <Badge variant="secondary" className="w-fit mx-auto">
               <UserCheck className="h-4 w-4 mr-2" />
               Customer Success
@@ -363,11 +418,18 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               See how supermarket owners across Kenya are transforming their businesses with our ERP system.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="relative">
+              <motion.div
+                key={index}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <Card className="relative h-full">
                 <CardHeader className="space-y-4">
                   <div className="flex items-center space-x-1">
                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -386,6 +448,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -394,7 +457,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center space-y-4 mb-16">
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center space-y-4 mb-16"
+          >
             <Badge variant="secondary" className="w-fit mx-auto">
               <CreditCard className="h-4 w-4 mr-2" />
               Simple Pricing
@@ -405,11 +474,19 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Transparent pricing with no hidden fees. All plans include VAT compliance and 24/7 support.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {pricingPlans.map((plan, index) => (
-              <Card key={index} className={`relative ${plan.highlighted ? 'border-primary shadow-lg scale-105' : 'border-2'}`}>
+              <motion.div
+                key={index}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className={plan.highlighted ? 'animated-card-border' : ''}
+              >
+                <Card className={`relative h-full ${plan.highlighted ? 'border-primary shadow-lg scale-105' : 'border-2'}`}>
                 {plan.highlighted && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                     <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
@@ -443,6 +520,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   </Button>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
           </div>
 
@@ -460,7 +538,13 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto space-y-8">
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto space-y-8"
+          >
             <h2 className="text-3xl lg:text-5xl font-medium">
               Ready to Transform Your Supermarket Chain?
             </h2>
@@ -468,15 +552,17 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
               Join hundreds of Kenyan supermarket owners who have already modernized their operations with our ERP system.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
-                Start Your Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <div className="animated-border">
+                <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
+                  Start Your Free Trial
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
               <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
                 Schedule a Demo
               </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
