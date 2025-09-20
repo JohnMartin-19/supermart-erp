@@ -29,6 +29,7 @@ class BillListCreateBillAPIView(APIView):
     def post(self, request):
         data = request.data
         vendor_name = data.get('vendor_name') 
+        bill_number = data.get('bill_number')
         serializer = self.serializer_class(data = request.data)
         with transaction.atomic():
             if serializer.is_valid():
@@ -36,7 +37,7 @@ class BillListCreateBillAPIView(APIView):
                 ActivityLogs.objects.create(
                         tenant=request.user.tenant,
                         action_type='bill_created',
-                        message=f'Bill for "{vendor_name}" created.'
+                        message=f'Bill for {vendor_name} with bill number {bill_number} created.'
                 )
                 return Response(serializer.data, status = status.HTTP_201_CREATED)
             return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)

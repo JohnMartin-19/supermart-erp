@@ -78,12 +78,9 @@ export function QuickInvoice() {
         }
       } catch (error) {
         console.error("Failed to decode JWT:", error);
-        // Handle token decoding errors gracefully, e.g., by logging out the user
-        // You might want to clear the tokens here
       }
     }
-  }, []); // The empty dependency array [] ensures this runs only once on mount
-
+  }, []); 
         
   const addItem = () => {
     const newItem: InvoiceItem = {
