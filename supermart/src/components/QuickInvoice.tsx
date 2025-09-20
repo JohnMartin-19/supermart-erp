@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -54,7 +54,10 @@ export function QuickInvoice() {
       amount: 0
     }
   ]);
+  
   const tenantDomain = localStorage.getItem('tenant_domain')
+  const [currentCashier,setCurrentCashier] = useState<string | null>(null);
+  const [currentCompany,setCurrentCompany] = useState<string | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Date.now()}`);
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
@@ -63,6 +66,25 @@ export function QuickInvoice() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const access_token = localStorage.getItem('access_token');
+    if (access_token) {
+      try {
+        const payloadBase64 = access_token.split(".")[1];
+        const decodedPayload = JSON.parse(atob(payloadBase64));
+        if (decodedPayload.username && decodedPayload.company_name) {
+          setCurrentCashier(decodedPayload.username);
+          setCurrentCompany(decodedPayload.company_name);
+        }
+      } catch (error) {
+        console.error("Failed to decode JWT:", error);
+        // Handle token decoding errors gracefully, e.g., by logging out the user
+        // You might want to clear the tokens here
+      }
+    }
+  }, []); // The empty dependency array [] ensures this runs only once on mount
+
+        
   const addItem = () => {
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
@@ -171,10 +193,9 @@ export function QuickInvoice() {
             {/* Invoice Header */}
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2>Your Company Name</h2>
+                <h2>{currentCompany}</h2>
                 <p className="text-muted-foreground">
-                  123 Business Street<br />
-                  City, State 12345
+                  Served by:{currentCashier}
                 </p>
               </div>
               <div className="text-right">
