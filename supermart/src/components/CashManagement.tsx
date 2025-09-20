@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 // Interface for a cash transaction, used for both sales and expenses
 interface CashTransaction {
   id: string;
-  type: 'sale' | 'expense' | 'deposit' | 'withdrawal';
+  type: 'sale' | 'expense' | 'deposit' | 'withdrawal'|'reconciliation';
   amount: number;
   description: string;
   branch: string;
@@ -36,10 +36,10 @@ interface CashDrawer {
   closed_at?: string;
 }
 
-// Interface for the fetched expense data
+
 interface ExpenseData {
   id: string;
-  branch: number; // Assuming branch is an ID
+  branch: number; 
   cash_drawer: number;
   amount: string;
   description: string;
@@ -47,17 +47,17 @@ interface ExpenseData {
   tenant: number;
 }
 
-// Interface for fetched branch data
+
 interface Branch {
   id: number;
   branch_name: string;
 }
 
-// Interface for fetched reconciliation data
+
 interface ReconciliationData {
   id: string;
   cash_drawer: number;
-  actual_cash_count: number;
+  actual_cash_count: string;
   notes: string;
   recorded_at: string;
 }
@@ -99,32 +99,9 @@ export function CashManagement() {
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const [drawerSuccess, setDrawerSuccess] = useState(false);
 
-  // Mock sales data to be displayed alongside real expenses
-  const [salesTransactions] = useState<CashTransaction[]>([
-    {
-      id: '1',
-      type: 'sale',
-      amount: 2450,
-      description: 'Customer purchase - Receipt #R001',
-      branch: 'Main Store - Nairobi CBD',
-      cashier: 'Alice Wanjiku',
-      recorded_at: '2025-08-26T09:30:00Z',
-      paymentMethod: 'cash'
-    },
-    {
-      id: '2',
-      type: 'sale',
-      amount: 1850,
-      description: 'Customer purchase - Receipt #R002',
-      branch: 'Main Store - Nairobi CBD',
-      cashier: 'Alice Wanjiku',
-      recorded_at: '2025-08-26T09:25:00Z',
-      paymentMethod: 'mpesa'
-    },
-  ]);
+  
 
   const allTransactions: CashTransaction[] = [
-    ...salesTransactions,
     ...cashExpenses.map(exp => ({
       id: exp.id,
       type: 'expense' as 'expense',
@@ -134,8 +111,20 @@ export function CashManagement() {
       cashier: cashDrawers.find(d => d.id === String(exp.cash_drawer))?.cashier || 'N/A',
       recorded_at: exp.recorded_at,
       paymentMethod: 'cash' as 'cash',
+    })),
+    
+    ...reconciliations.map(rec => ({
+      id: rec.id,
+      type: 'reconciliation' as 'reconciliation', 
+      amount: parseFloat(rec.actual_cash_count),
+      description: rec.notes || 'Cash Drawer Reconciliation', 
+      branch: cashDrawers.find(d => d.id === String(rec.cash_drawer))?.branch || 'N/A',
+      cashier: cashDrawers.find(d => d.id === String(rec.cash_drawer))?.cashier || 'N/A',
+      recorded_at: rec.recorded_at,
+      paymentMethod: 'cash' as 'cash',
     }))
   ].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
+    
 
   const branches = ['all', ...Array.from(new Set(cashDrawers.map(d => d.branch)))];
 
@@ -241,7 +230,7 @@ export function CashManagement() {
     try {
       const payload = {
         cash_drawer: reconciliation.cash_drawer_id,
-        actual_cash_count: reconciliation.actual_count,
+        actual_cash_count: String(reconciliation.actual_count),
         notes: reconciliation.notes,
       };
 
@@ -361,6 +350,7 @@ export function CashManagement() {
       case 'expense': return '💸';
       case 'deposit': return '📥';
       case 'withdrawal': return '📤';
+      case 'reconciliation': return '💰';
       default: return '💳';
     }
   };
