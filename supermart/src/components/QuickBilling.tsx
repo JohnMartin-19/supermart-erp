@@ -78,7 +78,8 @@ export function QuickBilling() {
       amount: 0
     }
   ]);
-
+  const [currentCashier, setCurrentCashier] = useState<string | null>(null);
+  const [currentCompany, setCurrentCompany] = useState<string | null>(null);
   const [billNumber, setBillNumber] = useState(`BILL-${Date.now()}`);
   const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
@@ -158,13 +159,21 @@ export function QuickBilling() {
         tax_rate: item.taxRate,
       })),
     };
-
+    const access_token = localStorage.getItem('access_token');
+        if (access_token) {
+          const payloadBase64 = access_token.split(".")[1];
+          const decodedPayload = JSON.parse(atob(payloadBase64));
+          if (decodedPayload.username && decodedPayload.company_name) {
+            setCurrentCashier(decodedPayload.username);
+            setCurrentCompany(decodedPayload.company_name)
+          }
+        }
     try {
       const response = await fetch(`http://${tenantDomain}:8000/api/v1/billing/bills/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${access_token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -242,10 +251,10 @@ export function QuickBilling() {
           <CardContent className="p-8">
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-xl font-bold">Your Company Name</h2>
+                <h2 className="text-xl font-bold"> {currentCompany}</h2>
                 <p className="text-muted-foreground">
-                  123 Business Street<br />
-                  City, State 12345
+                  <br />
+                  served by:{currentCashier}
                 </p>
               </div>
               <div className="text-right">

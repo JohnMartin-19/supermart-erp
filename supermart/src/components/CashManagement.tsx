@@ -55,6 +55,7 @@ interface Branch {
 
 
 interface ReconciliationData {
+  branch: any;
   id: string;
   cash_drawer: number;
   actual_cash_count: string;
@@ -98,10 +99,20 @@ export function CashManagement() {
   const [isAddingDrawer, setIsAddingDrawer] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const [drawerSuccess, setDrawerSuccess] = useState(false);
-
+  // const access_token = localStorage.getItem('access_token');
+  //       if (access_token) {
+  //         const payloadBase64 = access_token.split(".")[1];
+  //         const decodedPayload = JSON.parse(atob(payloadBase64));
+  //         if (decodedPayload.username ) {
+  //           setCurrentCashier(decodedPayload.username);
+           
+  //         }
+  //       }
   
 
   const allTransactions: CashTransaction[] = [
+    
+   ///using spread operators for appending these transactions dynamically
     ...cashExpenses.map(exp => ({
       id: exp.id,
       type: 'expense' as 'expense',
@@ -112,19 +123,20 @@ export function CashManagement() {
       recorded_at: exp.recorded_at,
       paymentMethod: 'cash' as 'cash',
     })),
-    
-    ...reconciliations.map(rec => ({
-      id: rec.id,
-      type: 'reconciliation' as 'reconciliation', 
-      amount: parseFloat(rec.actual_cash_count),
-      description: rec.notes || 'Cash Drawer Reconciliation', 
-      branch: cashDrawers.find(d => d.id === String(rec.cash_drawer))?.branch || 'N/A',
-      cashier: cashDrawers.find(d => d.id === String(rec.cash_drawer))?.cashier || 'N/A',
-      recorded_at: rec.recorded_at,
-      paymentMethod: 'cash' as 'cash',
-    }))
+    ...reconciliations.map(rec => {
+   
+      return {
+        id: rec.id,
+        type: 'reconciliation' as 'reconciliation',
+        amount: parseFloat(rec.actual_cash_count),
+        description: rec.notes || 'Cash Drawer Reconciliation',
+        branch: cashDrawers.find(d => d.id === String(rec.cash_drawer))?.branch || `Branch ${rec.branch}`,
+        cashier: cashDrawers.find(d => d.id === String(rec.cash_drawer))?.cashier || 'N/A', 
+        recorded_at: rec.recorded_at,
+        paymentMethod: 'cash' as 'cash',
+      };
+    })
   ].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
-    
 
   const branches = ['all', ...Array.from(new Set(cashDrawers.map(d => d.branch)))];
 
@@ -136,7 +148,6 @@ export function CashManagement() {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         };
 
-        // Decode the JWT to get the username
         const access_token = localStorage.getItem('access_token');
         if (access_token) {
           const payloadBase64 = access_token.split(".")[1];
@@ -170,7 +181,7 @@ export function CashManagement() {
         setCashExpenses(expensesData);
         setBranchesList(branchesData);
         setReconciliations(reconciliationsData);
-
+        console.log('Recociliation data:', reconciliationsData)
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
       } finally {
@@ -361,6 +372,7 @@ export function CashManagement() {
       case 'deposit': return 'text-blue-600';
       case 'expense': return 'text-red-600';
       case 'withdrawal': return 'text-orange-600';
+      case 'reconciliation': return 'text-green-600';
       default: return 'text-gray-600';
     }
   };
