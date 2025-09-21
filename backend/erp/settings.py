@@ -74,8 +74,8 @@ TENANT_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-     "drf_spectacular",
-     'rest_framework_simplejwt.token_blacklist',
+    "drf_spectacular",
+    'rest_framework_simplejwt.token_blacklist',
     # tenant-specific apps...
     'authentication',
     'products',

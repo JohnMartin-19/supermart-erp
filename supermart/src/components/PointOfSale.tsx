@@ -7,15 +7,15 @@ import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Trash2, Plus, Minus, Calculator, CreditCard, Banknote, Receipt, Loader2, AlertCircle, Printer, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-
-// Update the Product interface to match the API response
+import { toast } from 'sonner';
+//  interface to match the API response
 interface Product {
-  id: number; // API returns a number for id
+  id: number; 
   name: string;
   description: string;
   category: string;
   cost_price: string;
-  selling_price: string; // API returns a string
+  selling_price: string; 
   initial_stock: number;
   current_stock: number;
   minimum_stock_level: number;
@@ -24,11 +24,11 @@ interface Product {
   is_active: boolean;
 }
 
-// Update the CartItem interface
+// CartItem interface
 interface CartItem {
   id: number;
   name: string;
-  price: number; // This will be the parsed selling_price
+  price: number; 
   quantity: number;
   barcode?: string;
   category: string;
@@ -40,11 +40,8 @@ export function PointOfSale() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountTendered, setAmountTendered] = useState('');
-
-  // New states for customer name and address
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
-  // New states for card payment details
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvc, setCvc] = useState('');
@@ -129,7 +126,7 @@ export function PointOfSale() {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const vatRate = 0.16; // 16% VAT in Kenya
+  const vatRate = 0.16; 
   const vatAmount = subtotal * vatRate;
   const total = subtotal + vatAmount;
   const change = paymentMethod === 'cash' ? parseFloat(amountTendered) - total : 0;
@@ -141,37 +138,37 @@ export function PointOfSale() {
   
   const validateForm = () => {
     if (cart.length === 0) {
-      alert("Cart cannot be empty.");
+      toast("Cart cannot be empty.");
       return false;
     }
 
     if (paymentMethod === 'mpesa' && !customerPhone) {
-      alert("Customer phone number is required for M-Pesa payments.");
+      toast("Customer phone number is required for M-Pesa payments.");
       return false;
     }
 
     if (paymentMethod === 'card') {
       if (!cardNumber || !expiryDate || !cvc) {
-        alert("Card details are required.");
+        toast("Card details are required.");
         return false;
       }
-      // Basic validation for card details
+      
       if (cardNumber.length < 16) {
-        alert("Card number must be 16 digits.");
+        toast("Card number must be 16 digits.");
         return false;
       }
       if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-        alert("Expiry date must be in MM/YY format.");
+        toast("Expiry date must be in MM/YY format.");
         return false;
       }
       if (cvc.length < 3) {
-        alert("CVC must be 3 or 4 digits.");
+        toast("CVC must be 3 or 4 digits.");
         return false;
       }
     }
 
     if (paymentMethod === 'cash' && parseFloat(amountTendered) < total) {
-      alert("Amount tendered is insufficient.");
+      toast("Amount tendered is insufficient.");
       return false;
     }
 
@@ -183,7 +180,6 @@ export function PointOfSale() {
       return;
     }
 
-    // Mock payment processing - would integrate with Django API
     const transactionId = `TRX-${Date.now()}`;
     const transactionTime = new Date().toLocaleString();
 
@@ -210,7 +206,7 @@ export function PointOfSale() {
     setLastTransactionDetails(transactionDetails);
     setIsReceiptOpen(true);
     
-    // Clear cart and states after successful payment simulation
+  
     setCart([]);
     setAmountTendered('');
     setCustomerPhone('');
