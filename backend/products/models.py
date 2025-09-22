@@ -77,7 +77,20 @@ class Product(models.Model):
         if self.cost_price > 0:
             return ((self.selling_price - self.cost_price) / self.cost_price) * 100
         return 0 
-    
+
+"""
+we use this model to create a reoder of low stock items
+""" 
+class ReorderRequest(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reorders")
+    branch = models.ForeignKey('multi_location.Branch', on_delete=models.CASCADE)
+    requested_quantity = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed = models.BooleanField(default=False)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Reorder {self.product.name} ({self.requested_quantity})"
     
 class Order(models.Model):
     order_id = models.CharField(max_length=30, editable=False, blank=True)
@@ -120,3 +133,27 @@ class OrderItem(models.Model):
           self.order_id = f'ORD-{timezone.now().strftime("%Y%m%d%H%M%S")}'  
         super().save(*args, **kwargs)
           
+    def complete_order(self):
+        """
+        set order as completed, update stock levels for products,
+        and check for re-order needs if product level/stock runs low.
+        """
+        if self.status != 'completed':
+            for item in self.items.all():
+                product = item.product
+                product.current_stock = F('current_stock') - item.quantity
+                product.save(update_fields=['current_stock'])
+
+                # refresh product from DB to get updated stock
+                product.refresh_from_db()
+
+                if product.current_stock <= product.minimum_stock_level:
+                    # Here you could trigger a re-order workflow
+                    ReorderRequest.objects.create(
+                        product=product,
+                        branch=product.branch,
+                        requested_quantity=product.minimum_stock_level * 2,  # Example logic
+                        tenant=product.tenant
+                    )
+            self.status = 'completed'
+            self.save()
