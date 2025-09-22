@@ -114,3 +114,9 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f'{self.product.name} ({self.quantity})'
+    
+    def save(self,*args, **kwargs):
+        if not self.order_id:
+          self.order_id = f'ORD-{timezone.now().strftime("%Y%m%d%H%M%S")}'  
+        super().save(*args, **kwargs)
+          
