@@ -23,9 +23,11 @@ class CustomerListCreateAPIView(APIView):
     """
     def post(self, request):
         data = request.data 
+        print('DATATAT;',data)
         full_name = data.get('full_name')
         serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
+            print("VALIDATED:", serializer.validated_data)
             serializer.save(tenant=request.user.tenant)
             ActivityLogs.objects.create(
                         tenant=request.user.tenant,
