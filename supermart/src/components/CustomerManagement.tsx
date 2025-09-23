@@ -17,7 +17,7 @@ interface Customer {
   phone_number: string;
   email?: string;
   address?: string;
-  membership_tier: number;
+  membership_tier: string;
   member_since: string;
   last_visit: string;
   loyalty_points?: number;
@@ -25,34 +25,10 @@ interface Customer {
   is_active?: boolean;
 }
 
+// The TransformedCustomer interface is simplified as the API already sends the correct string.
 interface TransformedCustomer extends Omit<Customer, 'membership_tier'> {
-  membership_tier: number;
-  membership_tier_string: 'regular' | 'silver' | 'gold' | 'platinum';
+  membership_tier: string;
 }
-
-// A mapping from string tier names to their numerical IDs for POST requests
-// const tierMap = {
-//   regular: 1,
-//   silver: 2,
-//   gold: 3,
-//   platinum: 4,
-// };
-
-// Helper function to map numerical tiers to string names for the UI
-const mapTierNumberToString = (tierNumber: number): 'regular' | 'silver' | 'gold' | 'platinum' => {
-  switch (tierNumber) {
-    case 1:
-      return 'regular';
-    case 2:
-      return 'silver';
-    case 3:
-      return 'gold';
-    case 4:
-      return 'platinum';
-    default:
-      return 'regular';
-  }
-};
 
 export function CustomerManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,12 +44,13 @@ export function CustomerManagement() {
     phone_number: '',
     email: '',
     address: '',
-    membership_tier: 'regular',
+    membership_tier: '',
   });
   const [isAdding, setIsAdding] = useState(false);
   const [addCustomerError, setAddCustomerError] = useState<string | null>(null);
   const [addCustomerSuccess, setAddCustomerSuccess] = useState(false);
-  const tenantDomain = localStorage.getItem("tenant_domain")
+  const tenantDomain = localStorage.getItem("tenant_domain");
+  
   const fetchCustomers = async () => {
     setIsLoading(true);
     setError(null);
@@ -92,9 +69,9 @@ export function CustomerManagement() {
 
       const data: Customer[] = await response.json();
       
+      // No need for a separate mapping function; the API provides the correct string.
       const transformedData: TransformedCustomer[] = data.map((customer) => ({
         ...customer,
-        membership_tier_string: mapTierNumberToString(customer.membership_tier),
       }));
 
       setCustomers(transformedData);
@@ -121,9 +98,7 @@ export function CustomerManagement() {
         phone_number: newCustomer.phone_number,
         email: newCustomer.email,
         address: newCustomer.address,
-        // Convert the string tier from the form to the numerical ID for the backend
         membership_tier: newCustomer.membership_tier,
-       
       };
 
       const response = await fetch(`http://${tenantDomain}:8000/api/v1/customers/customers/`, {
@@ -142,29 +117,25 @@ export function CustomerManagement() {
 
       const addedCustomer: Customer = await response.json();
       
-      // Transform the added customer data to match the UI state
       const transformedAddedCustomer: TransformedCustomer = {
         ...addedCustomer,
-        membership_tier_string: mapTierNumberToString(addedCustomer.membership_tier),
       };
 
       setCustomers(prevCustomers => [...prevCustomers, transformedAddedCustomer]);
       setAddCustomerSuccess(true);
 
-      // Reset the form after successful submission
       setNewCustomer({
         full_name: '',
         phone_number: '',
         email: '',
         address: '',
-        membership_tier: 'regular',
+        membership_tier: '',
       });
 
     } catch (err: any) {
       setAddCustomerError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsAdding(false);
-      // Close dialog after a short delay to show success/error message
       setTimeout(() => {
         setIsAddCustomerOpen(false);
       }, 1500);
@@ -193,7 +164,7 @@ export function CustomerManagement() {
     const matchesSearch = customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.phone_number?.includes(searchQuery) ||
                          customer.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTier = selectedTier === 'all' || customer.membership_tier_string === selectedTier;
+    const matchesTier = selectedTier === 'all' || customer.membership_tier === selectedTier;
     return matchesSearch && matchesTier;
   });
 
@@ -433,15 +404,15 @@ export function CustomerManagement() {
                     <div>
                       <CardTitle className="text-base flex items-center gap-2">
                         {customer.full_name}
-                        <span className="text-lg">{getTierIcon(customer.membership_tier_string)}</span>
+                        <span className="text-lg">{getTierIcon(customer.membership_tier)}</span>
                       </CardTitle>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                         <Phone className="h-3 w-3" />
                         {customer.phone_number}
                       </div>
                     </div>
-                    <Badge className={getTierColor(customer.membership_tier_string)}>
-                      {customer.membership_tier_string.charAt(0).toUpperCase() + customer.membership_tier_string.slice(1)}
+                    <Badge className={getTierColor(customer.membership_tier)}>
+                      {customer.membership_tier.charAt(0).toUpperCase() + customer.membership_tier.slice(1)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -579,25 +550,25 @@ export function CustomerManagement() {
                     <span className="flex items-center gap-2">
                       <span>👤</span> Regular
                     </span>
-                    <span>{customers.filter(c => c.membership_tier_string === 'regular').length}</span>
+                    <span>{customers.filter(c => c.membership_tier === 'regular').length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span>🥈</span> Silver
                     </span>
-                    <span>{customers.filter(c => c.membership_tier_string === 'silver').length}</span>
+                    <span>{customers.filter(c => c.membership_tier === 'silver').length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span>🥇</span> Gold
                     </span>
-                    <span>{customers.filter(c => c.membership_tier_string === 'gold').length}</span>
+                    <span>{customers.filter(c => c.membership_tier === 'gold').length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span>💎</span> Platinum
                     </span>
-                    <span>{customers.filter(c => c.membership_tier_string === 'platinum').length}</span>
+                    <span>{customers.filter(c => c.membership_tier === 'platinum').length}</span>
                   </div>
                 </div>
               </CardContent>
@@ -615,7 +586,7 @@ export function CustomerManagement() {
                     .map((customer) => (
                     <div key={customer.id} className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{getTierIcon(customer.membership_tier_string)}</span>
+                        <span className="text-lg">{getTierIcon(customer.membership_tier)}</span>
                         <span className="font-medium">{customer.full_name}</span>
                       </div>
                       <span>KES {Math.round((customer.total_spent || 0) / 1000)}K</span>
