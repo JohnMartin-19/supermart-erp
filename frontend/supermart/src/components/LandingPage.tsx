@@ -237,7 +237,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
               <div className="flex items-center space-x-8 pt-4">
                 <div className="text-center">
-                  <div className="text-2xl font-medium">500+</div>
+                  <div className="text-2xl font-medium">50+</div>
                   <div className="text-sm text-muted-foreground">Stores Using Our System</div>
                 </div>
                 <div className="text-center">
