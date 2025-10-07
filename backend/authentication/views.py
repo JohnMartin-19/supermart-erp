@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.shortcuts import render
 from tenants.models import *
 from rest_framework.views import APIView
 from rest_framework import status
